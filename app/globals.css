@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #061224;
+  --near-black: #02050a;
+  --cyan: #4fd1ff;
+  --shell: #f7f8fa;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #fcfcfd;
+  color: #0b1320;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(79, 209, 255, 0.18);
+}
+
+/* Premium utilities */
+.text-display {
+  letter-spacing: -0.035em;
+  font-weight: 660;
+  line-height: 0.92;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(9, 18, 36, 0.07);
+}
+
+.glass-dark {
+  background: rgba(6, 18, 36, 0.86);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hairline {
+  border-top: 1px solid rgba(6, 18, 36, 0.08);
+}
+
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.018;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.grid-faint {
+  background-image:
+    linear-gradient(rgba(6, 18, 36, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 18, 36, 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.cyan-glow {
+  box-shadow:
+    0 0 28px rgba(79, 209, 255, 0.17),
+    inset 0 0 22px rgba(79, 209, 255, 0.035);
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 140%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 80%
+  );
+  animation: shimmerMove 3.8s infinite;
+}
+@keyframes shimmerMove {
+  0% {
+    left: -150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
