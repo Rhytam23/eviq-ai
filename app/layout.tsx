@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import OpeningCinematic from "@/components/landing/OpeningCinematic";
-import CustomCursor from "@/components/landing/CustomCursor";
 import { Inter } from "next/font/google";
 
 const inter = Inter({
@@ -33,9 +32,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans bg-[#fcfcfd] text-ink-900 overflow-x-hidden`}>
+      <body className={`${inter.variable} font-sans bg-[#05070B] text-white overflow-x-hidden`}>
         <OpeningCinematic />
-        <CustomCursor />
         {children}
       </body>
     </html>

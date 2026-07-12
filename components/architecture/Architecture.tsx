@@ -86,21 +86,21 @@ export default function Architecture() {
   const activeDetails = nodes.find((n) => n.key === activeKey);
 
   return (
-    <section id="architecture" className="py-24 md:py-30 bg-shell-50 select-none">
+    <section id="architecture" className="py-24 md:py-30 bg-[#05070B] select-none">
       <Container>
         <div className="max-w-[700px] mx-auto text-center">
-          <p className="text-[12px] font-[650] tracking-widest text-ink-350 uppercase">
+          <p className="text-[12px] font-[650] tracking-widest text-orange uppercase">
             Architecture
           </p>
-          <h2 className="text-display mt-4 text-[34px] md:text-[46px] text-navy font-bold leading-tight">
+          <h2 className="text-display mt-4 text-[34px] md:text-[46px] text-white font-bold leading-tight">
             Enterprise-grade EV intelligence.
           </h2>
-          <p className="mt-4 text-[17px] text-ink-700">
-            Vehicle CAN-bus ingestion, time-series lake, predictive modeling, smart reservations.
+          <p className="mt-4 text-[17px] text-[#A0AEC0]">
+            Vehicle CAN-bus Ingestion, Time-Series Lake, Predictive Modeling, Smart Reservations.
           </p>
         </div>
 
-        <div className="mt-14 rounded-[28px] border border-black/[0.08] bg-white p-6 md:p-10 shadow-soft relative overflow-hidden">
+        <div className="mt-14 rounded-[28px] border border-white/[0.08] bg-[#0A1018] p-6 md:p-10 shadow-soft relative overflow-hidden">
           <div className="text-center text-[12.5px] text-ink-500 mb-6 lg:hidden">
             Tap nodes below to view security protocols and latency metrics.
           </div>
@@ -112,8 +112,8 @@ export default function Architecture() {
           >
             <defs>
               <linearGradient id="ag" x1="0%" x2="100%">
-                <stop offset="0%" stopColor="#4FD1FF" />
-                <stop offset="100%" stopColor="#206f8c" />
+                <stop offset="0%" stopColor="#FF7A00" />
+                <stop offset="100%" stopColor="#FFA640" />
               </linearGradient>
               <filter id="aglow">
                 <feGaussianBlur stdDeviation="2.2" result="b" />
@@ -128,7 +128,7 @@ export default function Architecture() {
             <path
               d="M60 162 H980"
               fill="none"
-              stroke="#d5dde7"
+              stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth="2"
               opacity={activeKey ? 0.35 : 1}
               className="transition-opacity duration-300"
@@ -177,17 +177,17 @@ export default function Architecture() {
                     cx={n.x}
                     cy="162"
                     r="24"
-                    fill="#ffffff"
-                    stroke={isCurrent ? "#4FD1FF" : "#c8d6e4"}
+                    fill="#05070B"
+                    stroke={isCurrent ? "#FF7A00" : "rgba(255, 255, 255, 0.08)"}
                     strokeWidth={isCurrent ? 2 : 1}
                   />
-                  <circle cx={n.x} cy="162" r="7" fill="#4FD1FF" filter="url(#aglow)" />
+                  <circle cx={n.x} cy="162" r="7" fill="#FF7A00" filter="url(#aglow)" />
                   <text
                     x={n.x}
                     y="115"
                     textAnchor="middle"
                     fontSize="11"
-                    fill={isCurrent ? "#4FD1FF" : "#8896a8"}
+                    fill={isCurrent ? "#FF7A00" : "#A0AEC0"}
                     fontWeight="600"
                     fontFamily="Inter,system-ui"
                     style={{ letterSpacing: "0.08em" }}
@@ -199,7 +199,7 @@ export default function Architecture() {
                     y="210"
                     textAnchor="middle"
                     fontSize="14"
-                    fill="#061224"
+                    fill="#ffffff"
                     fontWeight="650"
                     fontFamily="Inter,system-ui"
                   >
@@ -210,7 +210,7 @@ export default function Architecture() {
                     y="230"
                     textAnchor="middle"
                     fontSize="11.5"
-                    fill="#6b7687"
+                    fill="#A0AEC0"
                     fontFamily="Inter,system-ui"
                   >
                     {n.sub}
@@ -228,33 +228,33 @@ export default function Architecture() {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.28, ease: "easeInOut" }}
-                className="mt-8 border-t border-black/[0.08] pt-6 overflow-hidden"
+                className="mt-8 border-t border-white/[0.08] pt-6 overflow-hidden"
               >
                 <div className="grid md:grid-cols-3 gap-6 text-left">
                   <div className="md:col-span-1">
-                    <span className="text-[10px] font-[750] tracking-widest text-cyan uppercase bg-navy px-2.5 py-1 rounded-full">
+                    <span className="text-[10px] font-[750] tracking-widest text-orange uppercase bg-slate-900 px-2.5 py-1 rounded-full">
                       {activeDetails.key} SECURITY
                     </span>
-                    <h3 className="font-[650] text-[19px] text-navy mt-4">{activeDetails.title}</h3>
+                    <h3 className="font-[650] text-[19px] text-white mt-4">{activeDetails.title}</h3>
                     <p className="text-[12px] text-ink-500 font-semibold mt-1 uppercase tracking-wider">
                       {activeDetails.subtitle}
                     </p>
-                    <p className="text-[14px] text-ink-600 mt-3 leading-relaxed">
+                    <p className="text-[14px] text-[#A0AEC0] mt-3 leading-relaxed">
                       {activeDetails.desc}
                     </p>
                   </div>
 
-                  <div className="md:col-span-2 bg-shell-50 rounded-[18px] p-6 border border-black/[0.04]">
-                    <div className="text-[11.5px] font-[700] text-navy uppercase tracking-wider mb-3">
+                  <div className="md:col-span-2 bg-[#101820] rounded-[18px] p-6 border border-white/[0.08]">
+                    <div className="text-[11.5px] font-[700] text-white uppercase tracking-wider mb-3">
                       Verified Integration & Security Protocols
                     </div>
                     <ul className="space-y-2">
                       {activeDetails.protocols.map((p, idx) => (
                         <li
                           key={idx}
-                          className="flex items-start gap-2.5 text-[13.5px] text-ink-700"
+                          className="flex items-start gap-2.5 text-[13.5px] text-[#A0AEC0]"
                         >
-                          <span className="text-cyan font-bold mt-[1px]">✓</span>
+                          <span className="text-orange font-bold mt-[1px]">✓</span>
                           <span>{p}</span>
                         </li>
                       ))}
@@ -265,7 +265,7 @@ export default function Architecture() {
             )}
           </AnimatePresence>
 
-          <div className="mt-8 border-t border-black/[0.06] pt-6 grid sm:grid-cols-3 gap-4 text-[13px] text-ink-600 text-left">
+          <div className="mt-8 border-t border-white/[0.08] pt-6 grid sm:grid-cols-3 gap-4 text-[13px] text-[#A0AEC0] text-left">
             <div>• Secured vehicle keys • TLS 1.3 encryption • RBAC</div>
             <div>• Physics-informed range twin calibration</div>
             <div>• Virtual queue slot scheduling • Explainable AI</div>

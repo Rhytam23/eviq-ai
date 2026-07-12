@@ -2,13 +2,13 @@ import { Container } from "@/components/ui/Container";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#02050A] text-[#8e9fb1] border-t border-white/[0.07]">
+    <footer className="bg-[#05070B] text-[#8e9fb1] border-t border-white/[0.07]">
       <Container>
         <div className="py-14 grid md:grid-cols-4 gap-10 text-[13.5px]">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2">
-              <div className="w-[26px] h-[26px] rounded-[8px] bg-[#0b1a2c] flex items-center justify-center">
-                <div className="w-[9px] h-[9px] rounded-[3px] bg-cyan" />
+              <div className="w-[26px] h-[26px] rounded-[8px] bg-slate-900 flex items-center justify-center">
+                <div className="w-[9px] h-[9px] rounded-[3px] bg-orange" />
               </div>
               <span className="text-white font-[620] text-[16px] tracking-[-0.01em]">EVIQ AI</span>
             </div>

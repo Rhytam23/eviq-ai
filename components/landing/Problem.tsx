@@ -1,104 +1,76 @@
 "use client";
 import { Container } from "@/components/ui/Container";
-import { motion, useInView } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
-
-function Counter({
-  to,
-  prefix = "",
-  suffix = "",
-  decimals = 0,
-}: {
-  to: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-}) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    let start: number | null = null;
-    const d = 1600;
-    const step = (ts: number) => {
-      if (start === null) start = ts;
-      const p = Math.min((ts - start) / d, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(eased * to);
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [inView, to]);
-  return (
-    <span ref={ref}>
-      {prefix}
-      {val.toFixed(decimals)}
-      {suffix}
-    </span>
-  );
-}
+import { motion } from "framer-motion";
 
 export default function Problem() {
   return (
-    <section className="py-24 md:py-32 bg-shell-50">
+    <section className="py-24 md:py-32 bg-[#05070B] border-t border-white/[0.04]">
       <Container>
-        <div className="max-w-[760px]">
-          <p className="text-[12px] font-[650] tracking-widest text-ink-350 uppercase">
-            The problem
-          </p>
-          <h2 className="text-display mt-4 text-[36px] md:text-[52px] text-navy">
-            EV charging is complex,
-            <br />
-            unreliable, and fragmented.
-          </h2>
-          <p className="mt-5 text-[18px] leading-relaxed text-ink-700 max-w-[620px]">
-            Broken chargers, unexpected queues, and unoptimized battery routing create constant delays and vehicle downtime. Drivers and fleet managers are operating in the dark.
-          </p>
-        </div>
+        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-[1100px] mx-auto">
+          <div>
+            <span className="text-[12px] font-bold tracking-widest text-orange uppercase bg-orange/10 px-3 py-1 rounded-full">
+              THE HARD TRUTH
+            </span>
+            <h2 className="text-display mt-6 text-[38px] md:text-[56px] text-white font-bold leading-tight tracking-tight">
+              EV charging is broken. EVIQ fixes it.
+            </h2>
+            <p className="mt-5 text-[17px] md:text-[19px] text-[#A0AEC0] leading-relaxed">
+              Electric vehicles have reached mass adoption, yet the underlying charging infrastructure remains fragmented, offline, and unpredictable. Drivers are forced to plan trips using spreadsheets and guess wait times.
+            </p>
+            <p className="mt-4 text-[14.5px] text-[#546b85] font-mono">
+              EVIQ AI operates as a unified predictive layer above existing hardware, solving the three core constraints of electric mobility:
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mt-14">
-          {[
-            {
-              n: 21,
-              pre: "",
-              suf: "%",
-              dec: 0,
-              t: "Public chargers are faulty or offline",
-              c: "Constant routing disruptions",
-            },
-            {
-              n: 38,
-              pre: "",
-              suf: " min",
-              dec: 0,
-              t: "Average queue wait at high-density hubs",
-              c: "Wasted commercial fleet hours",
-            },
-            {
-              n: 14,
-              pre: "",
-              suf: "%",
-              dec: 0,
-              t: "Battery degradation from bad habits",
-              c: "Accelerated capacity decay",
-            },
-          ].map((s, i) => (
+          <div className="space-y-6">
             <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ delay: i * 0.07, duration: 0.6 }}
-              className="rounded-[22px] bg-white border border-black/[0.07] p-7 shadow-soft"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="bg-[#0A1018] border border-white/[0.06] rounded-[22px] p-6 flex gap-4"
             >
-              <div className="text-[44px] tracking-[-0.03em] font-[700] text-navy">
-                <Counter to={s.n} prefix={s.pre} suffix={s.suf} decimals={s.dec} />
+              <span className="text-3xl mt-1">⚠️</span>
+              <div>
+                <h4 className="text-[17px] font-bold text-white">21% Hardware Offline Rates</h4>
+                <p className="text-[13.5px] text-[#A0AEC0] mt-1">
+                  Public charging ports are regularly offline, damaged, or derated, causing surprise routing delays.
+                </p>
               </div>
-              <div className="mt-2 text-[15.5px] text-ink-700 font-[500]">{s.t}</div>
-              <div className="mt-2 text-[13px] text-ink-500">{s.c}</div>
             </motion.div>
-          ))}
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.08 }}
+              className="bg-[#0A1018] border border-white/[0.06] rounded-[22px] p-6 flex gap-4"
+            >
+              <span className="text-3xl mt-1">⏱️</span>
+              <div>
+                <h4 className="text-[17px] font-bold text-white">38-Min Average Hub Wait</h4>
+                <p className="text-[13.5px] text-[#A0AEC0] mt-1">
+                  High-density hubs experience massive queues, but static apps offer no queue forecasting.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.16 }}
+              className="bg-[#0A1018] border border-white/[0.06] rounded-[22px] p-6 flex gap-4"
+            >
+              <span className="text-3xl mt-1">📉</span>
+              <div>
+                <h4 className="text-[17px] font-bold text-white">Unpredictable Battery Range</h4>
+                <p className="text-[13.5px] text-[#A0AEC0] mt-1">
+                  Weather stresses, wind shear, and elevation changes cause unexpected range drops and driver anxiety.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </Container>
     </section>

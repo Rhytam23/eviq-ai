@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --navy: #061224;
+  --navy: #05070B;
   --near-black: #02050a;
-  --cyan: #4fd1ff;
-  --shell: #f7f8fa;
+  --orange: #FF7A00;
+  --shell: #101820;
 }
 
 * {
@@ -19,13 +19,14 @@ html {
 }
 
 body {
-  background: #fcfcfd;
-  color: #0b1320;
+  background: #05070B;
+  color: #FFFFFF;
   overflow-x: hidden;
 }
 
 ::selection {
-  background: rgba(79, 209, 255, 0.18);
+  background: rgba(255, 122, 0, 0.18);
+  color: #FFFFFF;
 }
 
 /* Premium utilities */
@@ -36,21 +37,21 @@ body {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(16, 24, 32, 0.65);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(9, 18, 36, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-dark {
-  background: rgba(6, 18, 36, 0.86);
+  background: rgba(10, 16, 24, 0.86);
   backdrop-filter: blur(22px) saturate(1.2);
   -webkit-backdrop-filter: blur(22px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hairline {
-  border-top: 1px solid rgba(6, 18, 36, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .noise::before {
@@ -58,22 +59,22 @@ body {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.018;
+  opacity: 0.015;
   pointer-events: none;
-  mix-blend-mode: multiply;
+  mix-blend-mode: overlay;
 }
 
 .grid-faint {
   background-image:
-    linear-gradient(rgba(6, 18, 36, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 18, 36, 0.028) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-.cyan-glow {
+.orange-glow {
   box-shadow:
-    0 0 28px rgba(79, 209, 255, 0.17),
-    inset 0 0 22px rgba(79, 209, 255, 0.035);
+    0 0 28px rgba(255, 122, 0, 0.17),
+    inset 0 0 22px rgba(255, 122, 0, 0.035);
 }
 
 .shimmer {

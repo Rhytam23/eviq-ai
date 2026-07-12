@@ -45,7 +45,7 @@ export default function OpeningCinematic() {
     const drawGrid = (opacityVal: number) => {
       const w = c.width;
       const h = c.height;
-      ctx.strokeStyle = `rgba(79, 209, 255, ${opacityVal * 0.08})`;
+      ctx.strokeStyle = `rgba(255, 122, 0, ${opacityVal * 0.08})`;
       ctx.lineWidth = 1;
       const step = 96;
       for (let x = 0; x < w; x += step) {
@@ -91,8 +91,8 @@ export default function OpeningCinematic() {
         const p1 = t / 0.35;
         const pulse = 1 + 0.3 * Math.sin(p1 * Math.PI * 4);
         ctx.shadowBlur = 20;
-        ctx.shadowColor = "rgba(79, 209, 255, 0.8)";
-        ctx.fillStyle = "#4FD1FF";
+        ctx.shadowColor = "rgba(255, 122, 0, 0.8)";
+        ctx.fillStyle = "#FF7A00";
         ctx.beginPath();
         ctx.arc(cx, cy, 5 * pulse, 0, Math.PI * 2);
         ctx.fill();
@@ -106,15 +106,15 @@ export default function OpeningCinematic() {
         const by = cy - batteryH - 40;
 
         ctx.shadowBlur = 15;
-        ctx.shadowColor = "rgba(79, 209, 255, 0.5)";
-        ctx.strokeStyle = "#4FD1FF";
+        ctx.shadowColor = "rgba(255, 122, 0, 0.5)";
+        ctx.strokeStyle = "#FF7A00";
         ctx.lineWidth = 3;
 
         // Draw battery outline
         ctx.strokeRect(bx, by, batteryW, batteryH);
 
         // Draw top terminal cap
-        ctx.fillStyle = "#4FD1FF";
+        ctx.fillStyle = "#FF7A00";
         ctx.fillRect(cx - 15, by - 12, 30, 12);
 
         // Fill inner charging segments
@@ -135,7 +135,7 @@ export default function OpeningCinematic() {
           });
         }
 
-        ctx.fillStyle = "rgba(79, 209, 255, 0.7)";
+        ctx.fillStyle = "rgba(255, 122, 0, 0.7)";
         ctx.font = "20px monospace";
         activeHex.forEach((h, idx) => {
           ctx.fillText(h.text, cx + 90, h.y);
@@ -156,8 +156,8 @@ export default function OpeningCinematic() {
 
         // Draw final glowing battery state
         ctx.shadowBlur = 20 * fade;
-        ctx.shadowColor = "rgba(79, 209, 255, 0.7)";
-        ctx.strokeStyle = `rgba(79, 209, 255, ${fade})`;
+        ctx.shadowColor = "rgba(255, 122, 0, 0.7)";
+        ctx.strokeStyle = `rgba(255, 122, 0, ${fade})`;
         ctx.lineWidth = 2.5;
 
         const batteryH = 200;
@@ -166,7 +166,7 @@ export default function OpeningCinematic() {
         const by = cy - batteryH - 40;
         ctx.strokeRect(bx, by, batteryW, batteryH);
 
-        ctx.fillStyle = `rgba(79, 209, 255, ${fade})`;
+        ctx.fillStyle = `rgba(255, 122, 0, ${fade})`;
         ctx.fillRect(cx - 15, by - 12, 30, 12);
         ctx.fillRect(bx + 12, by + 12, batteryW - 24, batteryH - 24);
 
@@ -192,7 +192,7 @@ export default function OpeningCinematic() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-[#02050A] flex items-center justify-center overflow-hidden transition-opacity duration-700"
+      className="fixed inset-0 z-[9999] bg-[#05070B] flex items-center justify-center overflow-hidden transition-opacity duration-700"
       style={{ opacity }}
     >
       <canvas ref={canvasRef} className="w-full h-full block" />

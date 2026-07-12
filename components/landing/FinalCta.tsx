@@ -47,7 +47,7 @@ export default function FinalCta() {
       ctx.clearRect(0, 0, c.width, c.height);
 
       // Draw connection links
-      ctx.strokeStyle = "rgba(79, 209, 255, 0.08)";
+      ctx.strokeStyle = "rgba(255, 122, 0, 0.08)";
       ctx.lineWidth = 1.5;
       for (let i = 0; i < hubs.length - 1; i++) {
         ctx.beginPath();
@@ -56,7 +56,7 @@ export default function FinalCta() {
         ctx.stroke();
 
         // Draw flowing dashes along the connection links
-        ctx.strokeStyle = "rgba(79, 209, 255, 0.22)";
+        ctx.strokeStyle = "rgba(255, 122, 0, 0.22)";
         ctx.setLineDash([4, 18]);
         ctx.lineDashOffset = -t * 42;
         ctx.beginPath();
@@ -71,14 +71,14 @@ export default function FinalCta() {
         const glow = 0.52 + 0.48 * Math.sin(t * 1.4 + hb.phase);
 
         // outer pulsing ring
-        ctx.strokeStyle = `rgba(79, 209, 255, ${0.15 + glow * 0.25})`;
+        ctx.strokeStyle = `rgba(255, 122, 0, ${0.15 + glow * 0.25})`;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.arc(hb.x, hb.y, hb.r * (1 + glow * 0.3), 0, Math.PI * 2);
         ctx.stroke();
 
         // inner filled circle
-        ctx.fillStyle = `rgba(79, 209, 255, ${0.12 + glow * 0.15})`;
+        ctx.fillStyle = `rgba(255, 122, 0, ${0.12 + glow * 0.15})`;
         ctx.beginPath();
         ctx.arc(hb.x, hb.y, hb.r, 0, Math.PI * 2);
         ctx.fill();
@@ -95,7 +95,7 @@ export default function FinalCta() {
         const px =
           c.width / 2 + Math.cos(t * 0.6 + p) * (140 + p * 2.8) * Math.sin(t * 0.2 + p * 0.15);
         const py = 100 + Math.sin(t * 0.8 + p * 0.58) * 18;
-        ctx.fillStyle = "rgba(79,209,255,0.6)";
+        ctx.fillStyle = "rgba(255,122,0,0.6)";
         ctx.beginPath();
         ctx.arc(px, py, 1.5, 0, Math.PI * 2);
         ctx.fill();
@@ -104,10 +104,10 @@ export default function FinalCta() {
       // Draw mouse trail particles (Priority 2 visual effect)
       const trail = mouseTrailRef.current;
       ctx.shadowBlur = 10;
-      ctx.shadowColor = "rgba(79,209,255,0.8)";
+      ctx.shadowColor = "rgba(255,122,0,0.8)";
       for (let i = 0; i < trail.length; i++) {
         const p = trail[i];
-        ctx.fillStyle = `rgba(79, 209, 255, ${p.opacity * 0.72})`;
+        ctx.fillStyle = `rgba(255, 122, 0, ${p.opacity * 0.72})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2.5 * p.opacity, 0, Math.PI * 2);
         ctx.fill();
@@ -134,7 +134,7 @@ export default function FinalCta() {
   }, []);
 
   return (
-    <section id="access" className="relative bg-[#02060d] text-white overflow-hidden select-none">
+    <section id="access" className="relative bg-[#05070B] text-white overflow-hidden select-none">
       <canvas
         ref={canvasRef}
         className="absolute inset-x-0 bottom-0 w-full h-[260px] opacity-[1]"
@@ -143,12 +143,12 @@ export default function FinalCta() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(900px 420px at 50% -10%, rgba(79,209,255,0.10), transparent 68%)",
+            "radial-gradient(900px 420px at 50% -10%, rgba(255,122,0,0.10), transparent 68%)",
         }}
       />
       <Container>
         <div className="relative py-24 md:py-32 text-center max-w-[820px] mx-auto">
-          <p className="text-cyan text-[12px] tracking-widest font-[650] uppercase">EVIQ AI</p>
+          <p className="text-orange text-[12px] tracking-widest font-[650] uppercase">EVIQ AI</p>
           <h2 className="text-display mt-5 text-[40px] md:text-[62px] leading-[0.95] font-bold">
             The operating system
             <br />
@@ -161,19 +161,19 @@ export default function FinalCta() {
           <div className="mt-9 flex items-center justify-center gap-4 flex-wrap">
             <a
               href="/demo"
-              className="px-[24px] py-[13px] rounded-full bg-white text-[#071425] font-[650] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lift snap-cursor"
+              className="px-[24px] py-[13px] rounded-full bg-orange text-white font-[650] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lift"
             >
               Try AI Assistant
             </a>
             <a
               href="mailto:founders@eviq.ai"
-              className="px-[24px] py-[13px] rounded-full border border-white/22 text-white font-[600] text-[15px] hover:bg-white/7 hover:scale-[1.02] active:scale-[0.98] transition-all snap-cursor"
+              className="px-[24px] py-[13px] rounded-full border border-white/22 text-white font-[600] text-[15px] hover:bg-white/7 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               Request early access
             </a>
           </div>
           <div className="mt-7 text-[12.5px] text-[#8a9fb3]">
-            Private beta • US & EU deployments
+            Private beta • US & EU deployments • Built by GridPulse
           </div>
         </div>
       </Container>
