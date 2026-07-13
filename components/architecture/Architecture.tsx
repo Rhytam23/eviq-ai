@@ -235,7 +235,9 @@ export default function Architecture() {
                     <span className="text-[10px] font-[750] tracking-widest text-orange uppercase bg-slate-900 px-2.5 py-1 rounded-full">
                       {activeDetails.key} SECURITY
                     </span>
-                    <h3 className="font-[650] text-[19px] text-white mt-4">{activeDetails.title}</h3>
+                    <h3 className="font-[650] text-[19px] text-white mt-4">
+                      {activeDetails.title}
+                    </h3>
                     <p className="text-[12px] text-ink-500 font-semibold mt-1 uppercase tracking-wider">
                       {activeDetails.subtitle}
                     </p>

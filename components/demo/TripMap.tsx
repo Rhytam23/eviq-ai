@@ -89,15 +89,15 @@ export default function TripMap({
             background: `${routeColor}18`,
           }}
         >
-          {trafficSeverity === "normal" ? "Clear" : trafficSeverity === "dense" ? "Moderate Traffic" : "Heavy Traffic"}
+          {trafficSeverity === "normal"
+            ? "Clear"
+            : trafficSeverity === "dense"
+              ? "Moderate Traffic"
+              : "Heavy Traffic"}
         </span>
       </div>
 
-      <svg
-        viewBox="0 0 700 420"
-        className="w-full h-full"
-        aria-label="Interactive trip map"
-      >
+      <svg viewBox="0 0 700 420" className="w-full h-full" aria-label="Interactive trip map">
         {/* Road network (static background roads) */}
         <g opacity="0.12" stroke="#FFFFFF" strokeWidth="1" fill="none">
           <path d="M 0 200 Q 200 210 400 195 T 700 200" />
@@ -169,7 +169,13 @@ export default function TripMap({
                 cx={pos.x}
                 cy={pos.y}
                 r={st.isSelected ? 9 : 7}
-                fill={st.isSelected ? "#FF7A00" : st.isRecommended ? "rgba(255,122,0,0.4)" : "rgba(255,255,255,0.15)"}
+                fill={
+                  st.isSelected
+                    ? "#FF7A00"
+                    : st.isRecommended
+                      ? "rgba(255,122,0,0.4)"
+                      : "rgba(255,255,255,0.15)"
+                }
                 stroke={st.isSelected || st.isRecommended ? "#FF7A00" : "rgba(255,255,255,0.35)"}
                 strokeWidth={st.isSelected ? 2 : 1.5}
                 style={{ transition: "all 0.2s ease" }}
@@ -210,12 +216,7 @@ export default function TripMap({
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
           {/* Vehicle dot */}
-          <circle
-            cx={route.vehiclePos.x}
-            cy={route.vehiclePos.y}
-            r={6}
-            fill="#FF7A00"
-          />
+          <circle cx={route.vehiclePos.x} cy={route.vehiclePos.y} r={6} fill="#FF7A00" />
           {/* "YOU" label */}
           <text
             x={route.vehiclePos.x}

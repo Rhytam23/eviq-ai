@@ -4,7 +4,9 @@ import { useEffect, useState, useRef } from "react";
 
 export default function CockpitHud() {
   const [t, setT] = useState(0);
-  const [activePod, setActivePod] = useState<"station" | "battery" | "route" | "prediction" | null>(null);
+  const [activePod, setActivePod] = useState<"station" | "battery" | "route" | "prediction" | null>(
+    null
+  );
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
 
@@ -193,8 +195,23 @@ export default function CockpitHud() {
             </defs>
 
             {/* Inner Dashboard HUD Rings */}
-            <circle cx="230" cy="180" r="100" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
-            <circle cx="230" cy="180" r="120" fill="none" stroke="rgba(255,255,255,0.015)" strokeWidth="1" strokeDasharray="3 8" />
+            <circle
+              cx="230"
+              cy="180"
+              r="100"
+              fill="none"
+              stroke="rgba(255,255,255,0.02)"
+              strokeWidth="1"
+            />
+            <circle
+              cx="230"
+              cy="180"
+              r="120"
+              fill="none"
+              stroke="rgba(255,255,255,0.015)"
+              strokeWidth="1"
+              strokeDasharray="3 8"
+            />
 
             {/* Orange Navigation route path */}
             <path
@@ -304,9 +321,30 @@ export default function CockpitHud() {
                 stroke="rgba(255,255,255,0.06)"
                 className="hover:stroke-orange/40 transition-colors"
               />
-              <text x="50" y="82" fontSize="9" fontFamily="Inter,system-ui" fontWeight="700" fill="#A0AEC0" letterSpacing="0.08em">CHARGER</text>
-              <text x="50" y="103" fontSize="16" fontFamily="Inter,system-ui" fontWeight="700" fill="#ffffff" letterSpacing="-0.02em">
-                {(312 + Math.sin(t * 1.4) * 8).toFixed(0)} <tspan fontSize="11" fill="#A0AEC0">kW</tspan>
+              <text
+                x="50"
+                y="82"
+                fontSize="9"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#A0AEC0"
+                letterSpacing="0.08em"
+              >
+                CHARGER
+              </text>
+              <text
+                x="50"
+                y="103"
+                fontSize="16"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#ffffff"
+                letterSpacing="-0.02em"
+              >
+                {(312 + Math.sin(t * 1.4) * 8).toFixed(0)}{" "}
+                <tspan fontSize="11" fill="#A0AEC0">
+                  kW
+                </tspan>
               </text>
               <circle cx="128" cy="78" r="3.5" fill="#FF7A00" filter="url(#glow)" />
             </g>
@@ -323,9 +361,30 @@ export default function CockpitHud() {
                 stroke="rgba(255,255,255,0.06)"
                 className="hover:stroke-orange/40 transition-colors"
               />
-              <text x="328" y="82" fontSize="9" fontFamily="Inter,system-ui" fontWeight="700" fill="#A0AEC0" letterSpacing="0.08em">BATTERY</text>
-              <text x="328" y="103" fontSize="16" fontFamily="Inter,system-ui" fontWeight="700" fill="#ffffff" letterSpacing="-0.02em">
-                94.6% <tspan fontSize="11" fill="#A0AEC0">SoH</tspan>
+              <text
+                x="328"
+                y="82"
+                fontSize="9"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#A0AEC0"
+                letterSpacing="0.08em"
+              >
+                BATTERY
+              </text>
+              <text
+                x="328"
+                y="103"
+                fontSize="16"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#ffffff"
+                letterSpacing="-0.02em"
+              >
+                94.6%{" "}
+                <tspan fontSize="11" fill="#A0AEC0">
+                  SoH
+                </tspan>
               </text>
             </g>
 
@@ -341,8 +400,27 @@ export default function CockpitHud() {
                 stroke="rgba(255,255,255,0.06)"
                 className="hover:stroke-orange/40 transition-colors"
               />
-              <text x="50" y="284" fontSize="9" fontFamily="Inter,system-ui" fontWeight="700" fill="#A0AEC0" letterSpacing="0.08em">ROUTE</text>
-              <text x="50" y="305" fontSize="15" fontFamily="Inter,system-ui" fontWeight="700" fill="#ffffff">Optimized</text>
+              <text
+                x="50"
+                y="284"
+                fontSize="9"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#A0AEC0"
+                letterSpacing="0.08em"
+              >
+                ROUTE
+              </text>
+              <text
+                x="50"
+                y="305"
+                fontSize="15"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#ffffff"
+              >
+                Optimized
+              </text>
               <circle cx="128" cy="280" r="3" fill="#FF7A00" opacity="0.9" />
             </g>
 
@@ -358,8 +436,27 @@ export default function CockpitHud() {
                 stroke="rgba(255,255,255,0.06)"
                 className="hover:stroke-orange/40 transition-colors"
               />
-              <text x="328" y="284" fontSize="9" fontFamily="Inter,system-ui" fontWeight="700" fill="#A0AEC0" letterSpacing="0.08em">AI PREDICT</text>
-              <text x="328" y="305" fontSize="15" fontFamily="Inter,system-ui" fontWeight="700" fill="#ffffff">0m queue</text>
+              <text
+                x="328"
+                y="284"
+                fontSize="9"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#A0AEC0"
+                letterSpacing="0.08em"
+              >
+                AI PREDICT
+              </text>
+              <text
+                x="328"
+                y="305"
+                fontSize="15"
+                fontFamily="Inter,system-ui"
+                fontWeight="700"
+                fill="#ffffff"
+              >
+                0m queue
+              </text>
             </g>
 
             {/* AI Core Sensor Nodes */}
@@ -369,9 +466,29 @@ export default function CockpitHud() {
             ].map(([x, y], i) => (
               <g key={i}>
                 <circle cx={x} cy={y} r="3" fill="#FF7A00" filter="url(#glow)" />
-                <circle cx={x} cy={y} r="6" fill="none" stroke="#FF7A00" strokeWidth="0.8" opacity="0.3">
-                  <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" begin={`${i * 0.5}s`} />
-                  <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" begin={`${i * 0.5}s`} />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="none"
+                  stroke="#FF7A00"
+                  strokeWidth="0.8"
+                  opacity="0.3"
+                >
+                  <animate
+                    attributeName="r"
+                    values="5;10;5"
+                    dur="2s"
+                    repeatCount="indefinite"
+                    begin={`${i * 0.5}s`}
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0.4;0;0.4"
+                    dur="2s"
+                    repeatCount="indefinite"
+                    begin={`${i * 0.5}s`}
+                  />
                 </circle>
               </g>
             ))}

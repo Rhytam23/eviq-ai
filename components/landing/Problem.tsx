@@ -15,10 +15,13 @@ export default function Problem() {
               EV charging is broken. EVIQ fixes it.
             </h2>
             <p className="mt-5 text-[17px] md:text-[19px] text-[#A0AEC0] leading-relaxed">
-              Electric vehicles have reached mass adoption, yet the underlying charging infrastructure remains fragmented, offline, and unpredictable. Drivers are forced to plan trips using spreadsheets and guess wait times.
+              Electric vehicles have reached mass adoption, yet the underlying charging
+              infrastructure remains fragmented, offline, and unpredictable. Drivers are forced to
+              plan trips using spreadsheets and guess wait times.
             </p>
             <p className="mt-4 text-[14.5px] text-[#546b85] font-mono">
-              EVIQ AI operates as a unified predictive layer above existing hardware, solving the three core constraints of electric mobility:
+              EVIQ AI operates as a unified predictive layer above existing hardware, solving the
+              three core constraints of electric mobility:
             </p>
           </div>
 
@@ -34,7 +37,8 @@ export default function Problem() {
               <div>
                 <h4 className="text-[17px] font-bold text-white">21% Hardware Offline Rates</h4>
                 <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                  Public charging ports are regularly offline, damaged, or derated, causing surprise routing delays.
+                  Public charging ports are regularly offline, damaged, or derated, causing surprise
+                  routing delays.
                 </p>
               </div>
             </motion.div>
@@ -50,7 +54,8 @@ export default function Problem() {
               <div>
                 <h4 className="text-[17px] font-bold text-white">38-Min Average Hub Wait</h4>
                 <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                  High-density hubs experience massive queues, but static apps offer no queue forecasting.
+                  High-density hubs experience massive queues, but static apps offer no queue
+                  forecasting.
                 </p>
               </div>
             </motion.div>
@@ -66,7 +71,8 @@ export default function Problem() {
               <div>
                 <h4 className="text-[17px] font-bold text-white">Unpredictable Battery Range</h4>
                 <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                  Weather stresses, wind shear, and elevation changes cause unexpected range drops and driver anxiety.
+                  Weather stresses, wind shear, and elevation changes cause unexpected range drops
+                  and driver anxiety.
                 </p>
               </div>
             </motion.div>

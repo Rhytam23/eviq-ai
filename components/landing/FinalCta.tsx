@@ -117,7 +117,7 @@ export default function FinalCta() {
         if (p.opacity <= 0) {
           trail.splice(i, 1);
           i--;
-          }
+        }
       }
       ctx.shadowBlur = 0; // reset
 

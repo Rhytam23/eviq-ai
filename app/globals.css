@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --navy: #05070B;
+  --navy: #05070b;
   --near-black: #02050a;
-  --orange: #FF7A00;
+  --orange: #ff7a00;
   --shell: #101820;
 }
 
@@ -19,14 +19,14 @@ html {
 }
 
 body {
-  background: #05070B;
-  color: #FFFFFF;
+  background: #05070b;
+  color: #ffffff;
   overflow-x: hidden;
 }
 
 ::selection {
   background: rgba(255, 122, 0, 0.18);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 /* Premium utilities */

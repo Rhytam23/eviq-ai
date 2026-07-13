@@ -53,12 +53,12 @@ export default function DecisionEngine() {
             The AI Decision Engine.
           </h2>
           <p className="mt-4 text-[17px] md:text-[19px] text-[#A0AEC0] max-w-[620px] mx-auto leading-relaxed">
-            Click the telemetry feeds on the left to watch raw parameters converge dynamically into a single optimal charging action.
+            Click the telemetry feeds on the left to watch raw parameters converge dynamically into
+            a single optimal charging action.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-[1.1fr_0.8fr_1.1fr] gap-8 items-center max-w-[1200px] mx-auto relative">
-          
           {/* Left Column: Data Feeds */}
           <div className="space-y-4">
             <h3 className="text-[#546b85] text-[11px] font-mono tracking-widest uppercase mb-2 pl-2">
@@ -79,12 +79,12 @@ export default function DecisionEngine() {
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{input.icon}</span>
                     <div>
-                      <h4 className={`text-[15.5px] font-bold ${isActive ? "text-orange" : "text-white"}`}>
+                      <h4
+                        className={`text-[15.5px] font-bold ${isActive ? "text-orange" : "text-white"}`}
+                      >
                         {input.name}
                       </h4>
-                      <p className="text-[12.5px] text-[#A0AEC0] mt-1 font-mono">
-                        {input.details}
-                      </p>
+                      <p className="text-[12.5px] text-[#A0AEC0] mt-1 font-mono">{input.details}</p>
                     </div>
                   </div>
                 </button>
@@ -96,17 +96,49 @@ export default function DecisionEngine() {
           <div className="hidden lg:flex flex-col items-center justify-center h-full relative min-h-[300px]">
             <svg viewBox="0 0 200 400" className="w-full h-full absolute inset-0">
               {/* Paths from inputs to recommendation */}
-              <path d="M 10 80 Q 100 80 100 200" fill="none" stroke={activeInput === "bms" ? "#FF7A00" : "rgba(255,255,255,0.06)"} strokeWidth={activeInput === "bms" ? 3 : 1.5} className="transition-all duration-300" />
-              <path d="M 10 160 Q 100 160 100 200" fill="none" stroke={activeInput === "network" ? "#FF7A00" : "rgba(255,255,255,0.06)"} strokeWidth={activeInput === "network" ? 3 : 1.5} className="transition-all duration-300" />
-              <path d="M 10 240 Q 100 240 100 200" fill="none" stroke={activeInput === "tariff" ? "#FF7A00" : "rgba(255,255,255,0.06)"} strokeWidth={activeInput === "tariff" ? 3 : 1.5} className="transition-all duration-300" />
-              <path d="M 10 320 Q 100 320 100 200" fill="none" stroke={activeInput === "topography" ? "#FF7A00" : "rgba(255,255,255,0.06)"} strokeWidth={activeInput === "topography" ? 3 : 1.5} className="transition-all duration-300" />
+              <path
+                d="M 10 80 Q 100 80 100 200"
+                fill="none"
+                stroke={activeInput === "bms" ? "#FF7A00" : "rgba(255,255,255,0.06)"}
+                strokeWidth={activeInput === "bms" ? 3 : 1.5}
+                className="transition-all duration-300"
+              />
+              <path
+                d="M 10 160 Q 100 160 100 200"
+                fill="none"
+                stroke={activeInput === "network" ? "#FF7A00" : "rgba(255,255,255,0.06)"}
+                strokeWidth={activeInput === "network" ? 3 : 1.5}
+                className="transition-all duration-300"
+              />
+              <path
+                d="M 10 240 Q 100 240 100 200"
+                fill="none"
+                stroke={activeInput === "tariff" ? "#FF7A00" : "rgba(255,255,255,0.06)"}
+                strokeWidth={activeInput === "tariff" ? 3 : 1.5}
+                className="transition-all duration-300"
+              />
+              <path
+                d="M 10 320 Q 100 320 100 200"
+                fill="none"
+                stroke={activeInput === "topography" ? "#FF7A00" : "rgba(255,255,255,0.06)"}
+                strokeWidth={activeInput === "topography" ? 3 : 1.5}
+                className="transition-all duration-300"
+              />
 
               {/* Output path */}
               <path d="M 100 200 H 190" fill="none" stroke="#FF7A00" strokeWidth="3" />
 
               {/* Central convergence node */}
               <circle cx="100" cy="200" r="8" fill="#FF7A00" />
-              <circle cx="100" cy="200" r="16" fill="none" stroke="#FF7A00" strokeWidth="1.5" className="animate-ping" />
+              <circle
+                cx="100"
+                cy="200"
+                r="16"
+                fill="none"
+                stroke="#FF7A00"
+                strokeWidth="1.5"
+                className="animate-ping"
+              />
             </svg>
             <span className="text-[10px] font-mono text-orange tracking-widest absolute top-[215px] uppercase">
               MPC SOLVER
@@ -133,24 +165,36 @@ export default function DecisionEngine() {
             <div className="space-y-4">
               <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">BATTERY STATUS</div>
-                  <div className="text-[14.5px] font-bold text-white mt-0.5">{recommendation.etaSoc}</div>
+                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">
+                    BATTERY STATUS
+                  </div>
+                  <div className="text-[14.5px] font-bold text-white mt-0.5">
+                    {recommendation.etaSoc}
+                  </div>
                 </div>
                 <span className="text-xl">📊</span>
               </div>
 
               <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">TARIFF LEDGER</div>
-                  <div className="text-[14.5px] font-bold text-orange mt-0.5">{recommendation.savings}</div>
+                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">
+                    TARIFF LEDGER
+                  </div>
+                  <div className="text-[14.5px] font-bold text-orange mt-0.5">
+                    {recommendation.savings}
+                  </div>
                 </div>
                 <span className="text-xl">💰</span>
               </div>
 
               <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">ROUTE DELAYS</div>
-                  <div className="text-[14.5px] font-bold text-orange mt-0.5">{recommendation.waitSaved}</div>
+                  <div className="text-[9.5px] text-[#546b85] font-mono uppercase">
+                    ROUTE DELAYS
+                  </div>
+                  <div className="text-[14.5px] font-bold text-orange mt-0.5">
+                    {recommendation.waitSaved}
+                  </div>
                 </div>
                 <span className="text-xl">⏱️</span>
               </div>
@@ -158,13 +202,14 @@ export default function DecisionEngine() {
               <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <div className="text-[9.5px] text-[#546b85] font-mono uppercase">SECURE PORT</div>
-                  <div className="text-[14.5px] font-bold text-white mt-0.5">{recommendation.port}</div>
+                  <div className="text-[14.5px] font-bold text-white mt-0.5">
+                    {recommendation.port}
+                  </div>
                 </div>
                 <span className="text-xl">🔒</span>
               </div>
             </div>
           </div>
-
         </div>
       </Container>
     </section>

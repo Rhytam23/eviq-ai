@@ -91,7 +91,9 @@ export default function DemoPage() {
   const [corridor, setCorridor] = useState<"hkust" | "airport" | "central">("hkust");
 
   // ── Reservation state machine ──
-  const [reservationStatus, setReservationStatus] = useState<"NONE" | "CONFIRMED" | "ACTIVE">("NONE");
+  const [reservationStatus, setReservationStatus] = useState<"NONE" | "CONFIRMED" | "ACTIVE">(
+    "NONE"
+  );
   const [reservedStationId, setReservedStationId] = useState<string | null>(null);
 
   // ── Derived values ──
@@ -139,7 +141,9 @@ export default function DemoPage() {
 
   // ── Currently reserved/selected station ──
   const activeStation = useMemo(
-    () => stationsWithDerived.find((s) => s.id === (reservedStationId ?? recommendedStation.id)) ?? recommendedStation,
+    () =>
+      stationsWithDerived.find((s) => s.id === (reservedStationId ?? recommendedStation.id)) ??
+      recommendedStation,
     [stationsWithDerived, reservedStationId, recommendedStation]
   );
 
@@ -159,7 +163,9 @@ export default function DemoPage() {
     const reasons: string[] = [];
     if (st.effectiveQueue === 0) reasons.push("No queue — immediate port access available");
     else reasons.push(`Shortest wait — ${st.effectiveQueue} min queue vs alternatives`);
-    reasons.push(`Lowest rate at $${st.pricePerKwh.toFixed(2)}/kWh${weatherStress !== "nominal" ? " (weather-adjusted tariff locked)" : ""}`);
+    reasons.push(
+      `Lowest rate at $${st.pricePerKwh.toFixed(2)}/kWh${weatherStress !== "nominal" ? " (weather-adjusted tariff locked)" : ""}`
+    );
     reasons.push(`${st.reliability}% port reliability — highest uptime in corridor`);
     return reasons;
   }, [recommendedStation, weatherStress]);
@@ -193,7 +199,8 @@ export default function DemoPage() {
     stationsWithDerived.reduce((a, s) => a + s.effectiveQueue, 0) / stationsWithDerived.length
   );
   const networkUtil = trafficSeverity === "normal" ? 62 : trafficSeverity === "dense" ? 78 : 91;
-  const predictedDemand = trafficSeverity === "gridlock" ? 94 : trafficSeverity === "dense" ? 81 : 67;
+  const predictedDemand =
+    trafficSeverity === "gridlock" ? 94 : trafficSeverity === "dense" ? 81 : 67;
 
   // ── Handlers ──
   function handleReserve(stationId: string) {
@@ -212,7 +219,6 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen bg-[#05070B] text-white font-sans flex flex-col">
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-[#05070B]/90 backdrop-blur-md border-b border-white/[0.06]">
         <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between gap-6">
@@ -224,7 +230,13 @@ export default function DemoPage() {
               className="text-[11px] font-mono text-white/35 hover:text-white/70 transition-colors flex items-center gap-1.5"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M7.5 2L3.5 6L7.5 10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               Home
             </a>
@@ -242,22 +254,30 @@ export default function DemoPage() {
           <div className="hidden md:flex items-center gap-6">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono text-white/30 uppercase">Battery</span>
-              <span className="text-[13px] font-semibold text-white tabular-nums">{batterySoc}%</span>
+              <span className="text-[13px] font-semibold text-white tabular-nums">
+                {batterySoc}%
+              </span>
             </div>
             <div className="w-px h-4 bg-white/10" />
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono text-white/30 uppercase">Est. Range</span>
-              <span className="text-[13px] font-semibold text-[#FF7A00] tabular-nums">{correctedRange} mi</span>
+              <span className="text-[13px] font-semibold text-[#FF7A00] tabular-nums">
+                {correctedRange} mi
+              </span>
             </div>
             <div className="w-px h-4 bg-white/10" />
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono text-white/30 uppercase">Corridor</span>
-              <span className="text-[13px] font-semibold text-white">{CORRIDOR_LABELS[corridor]}</span>
+              <span className="text-[13px] font-semibold text-white">
+                {CORRIDOR_LABELS[corridor]}
+              </span>
             </div>
             <div className="w-px h-4 bg-white/10" />
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono text-white/30 uppercase">AI Rec.</span>
-              <span className="text-[13px] font-semibold text-white">Station {recommendedStation.id}</span>
+              <span className="text-[13px] font-semibold text-white">
+                Station {recommendedStation.id}
+              </span>
             </div>
           </div>
 
@@ -282,10 +302,8 @@ export default function DemoPage() {
 
       {/* ── Main 3-column layout ────────────────────────────────────────────── */}
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-5 grid lg:grid-cols-[280px_1fr_340px] gap-4 items-start">
-
         {/* ── LEFT SIDEBAR ──────────────────────────────────────────────────── */}
         <aside className="space-y-4">
-
           {/* Vehicle & Trip Parameters */}
           <div className="rounded-2xl bg-[#0A1018] border border-white/[0.07] overflow-hidden">
             <div className="px-4 pt-4 pb-3 border-b border-white/[0.05]">
@@ -293,14 +311,15 @@ export default function DemoPage() {
               <p className="text-[10px] text-white/30 mt-0.5">Adjust to update AI analysis</p>
             </div>
             <div className="px-4 py-4 space-y-5">
-
               {/* SoC slider */}
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label htmlFor="soc-slider" className="text-[11px] text-white/45">
                     Battery State of Charge
                   </label>
-                  <span className="text-[12px] font-semibold font-mono text-white tabular-nums">{batterySoc}%</span>
+                  <span className="text-[12px] font-semibold font-mono text-white tabular-nums">
+                    {batterySoc}%
+                  </span>
                 </div>
                 <input
                   id="soc-slider"
@@ -380,7 +399,6 @@ export default function DemoPage() {
                   <option value="central">Central District — 31 mi</option>
                 </select>
               </div>
-
             </div>
           </div>
 
@@ -450,12 +468,20 @@ export default function DemoPage() {
 
         {/* ── RIGHT PANEL: Decision Journey ─────────────────────────────────── */}
         <aside className="space-y-4">
-
           {/* AI Recommendation */}
           <AiRecommendation
             stationName={recommendedStation.name}
             stationId={recommendedStation.id}
-            confidence={Math.min(99, 70 + recommendedStation.aiScore - Math.max(...stationsWithDerived.filter(s => s.id !== recommendedStation.id).map(s => s.aiScore)))}
+            confidence={Math.min(
+              99,
+              70 +
+                recommendedStation.aiScore -
+                Math.max(
+                  ...stationsWithDerived
+                    .filter((s) => s.id !== recommendedStation.id)
+                    .map((s) => s.aiScore)
+                )
+            )}
             reasons={aiReasons}
             rejectedStations={rejectedStations}
             estimatedChargeTime={recommendedStation.chargeTimeMin}
@@ -476,7 +502,6 @@ export default function DemoPage() {
             onCancel={handleCancelReservation}
             onStartSession={handleStartSession}
           />
-
         </aside>
       </main>
 
@@ -486,9 +511,7 @@ export default function DemoPage() {
           <span className="text-[11px] text-white/20 font-mono">
             EVIQ AI · Temporal Fusion Transformer MPC · HKUST Entrepreneurship Demo
           </span>
-          <span className="text-[11px] text-white/20 font-mono">
-            GridPulse Engineering
-          </span>
+          <span className="text-[11px] text-white/20 font-mono">GridPulse Engineering</span>
         </div>
       </footer>
     </div>

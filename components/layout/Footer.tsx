@@ -13,7 +13,8 @@ export default function Footer() {
               <span className="text-white font-[620] text-[16px] tracking-[-0.01em]">EVIQ AI</span>
             </div>
             <p className="mt-3 max-w-[420px] text-[#7f8f9f] leading-relaxed">
-              AI Charging Intelligence for Every EV Journey. The operating system for EV mobility intelligence.
+              AI Charging Intelligence for Every EV Journey. The operating system for EV mobility
+              intelligence.
             </p>
             <p className="mt-4 text-[12px] text-[#607080]">
               © {new Date().getFullYear()} EVIQ AI, Inc. · San Francisco · Singapore

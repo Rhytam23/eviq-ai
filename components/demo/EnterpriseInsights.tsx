@@ -29,7 +29,9 @@ function StatRow({ label, value, unit, accent, barValue }: StatRowProps) {
             />
           </div>
         )}
-        <span className={`text-[12px] font-semibold font-mono tabular-nums ${accent ? "text-[#FF7A00]" : "text-white/80"}`}>
+        <span
+          className={`text-[12px] font-semibold font-mono tabular-nums ${accent ? "text-[#FF7A00]" : "text-white/80"}`}
+        >
           {value}
           {unit && <span className="text-white/30 font-normal"> {unit}</span>}
         </span>
@@ -47,20 +49,13 @@ export default function EnterpriseInsights({
 }: EnterpriseInsightsProps) {
   return (
     <div className="rounded-2xl bg-[#0A1018] border border-white/[0.07] px-4 py-4">
-      <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-1">Network Insights</p>
+      <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-1">
+        Network Insights
+      </p>
       <p className="text-[11px] text-white/20 mb-3">Real-time operator telemetry</p>
 
-      <StatRow
-        label="Active chargers"
-        value={activeChargers}
-        unit="/ 20"
-        accent={false}
-      />
-      <StatRow
-        label="Offline chargers"
-        value={offlineChargers}
-        accent={offlineChargers > 2}
-      />
+      <StatRow label="Active chargers" value={activeChargers} unit="/ 20" accent={false} />
+      <StatRow label="Offline chargers" value={offlineChargers} accent={offlineChargers > 2} />
       <StatRow
         label="Avg. queue"
         value={avgQueueMin}

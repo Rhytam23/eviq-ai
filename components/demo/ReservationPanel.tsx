@@ -71,11 +71,10 @@ export default function ReservationPanel({
             className="px-5 py-6 text-center"
           >
             <p className="text-[13px] text-white/50 mb-1 leading-relaxed">
-              Reserve a port at <span className="text-white/75">{shortName}</span> to skip the queue.
+              Reserve a port at <span className="text-white/75">{shortName}</span> to skip the
+              queue.
             </p>
-            <p className="text-[11px] text-white/30 mb-5">
-              Your slot will be held for 15 minutes.
-            </p>
+            <p className="text-[11px] text-white/30 mb-5">Your slot will be held for 15 minutes.</p>
             <button
               onClick={onReserve}
               aria-label="Reserve recommended port"
@@ -99,7 +98,9 @@ export default function ReservationPanel({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span className="text-[12px] text-emerald-400 font-semibold">Port {portNumber} Reserved</span>
+                <span className="text-[12px] text-emerald-400 font-semibold">
+                  Port {portNumber} Reserved
+                </span>
               </div>
               <span className="text-[11px] font-mono text-white/40">
                 Lock expires {lockMins}:{String(lockSecs).padStart(2, "0")}
@@ -109,19 +110,29 @@ export default function ReservationPanel({
             {/* Details */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Station</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Station
+                </p>
                 <p className="text-[12px] font-semibold text-white leading-snug">{shortName}</p>
               </div>
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Port</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Port
+                </p>
                 <p className="text-[12px] font-semibold text-white">Port {portNumber} (NACS)</p>
               </div>
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Est. Cost</p>
-                <p className="text-[12px] font-semibold text-[#FF7A00]">${estimatedCost.toFixed(2)}</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Est. Cost
+                </p>
+                <p className="text-[12px] font-semibold text-[#FF7A00]">
+                  ${estimatedCost.toFixed(2)}
+                </p>
               </div>
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Charge Time</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Charge Time
+                </p>
                 <p className="text-[12px] font-semibold text-white">{estimatedChargeTime} min</p>
               </div>
             </div>
@@ -130,7 +141,9 @@ export default function ReservationPanel({
             <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-3 flex items-center justify-between">
               <span className="text-[12px] text-emerald-400">Savings vs alternatives</span>
               <div className="text-right">
-                <span className="text-[12px] font-semibold text-emerald-400">{timeSaved} min · ${costSaved.toFixed(2)}</span>
+                <span className="text-[12px] font-semibold text-emerald-400">
+                  {timeSaved} min · ${costSaved.toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -169,8 +182,12 @@ export default function ReservationPanel({
             </div>
             <div className="bg-white/[0.04] rounded-xl p-4">
               <div className="flex justify-between mb-3">
-                <span className="text-[11px] text-white/40 font-mono uppercase">Battery Target: 80%</span>
-                <span className="text-[11px] text-white/40 font-mono">{estimatedChargeTime} min remaining</span>
+                <span className="text-[11px] text-white/40 font-mono uppercase">
+                  Battery Target: 80%
+                </span>
+                <span className="text-[11px] text-white/40 font-mono">
+                  {estimatedChargeTime} min remaining
+                </span>
               </div>
               <div className="w-full h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
                 <div className="h-full bg-[#FF7A00] rounded-full" style={{ width: "68%" }} />
@@ -179,11 +196,17 @@ export default function ReservationPanel({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Running Cost</p>
-                <p className="text-[12px] font-semibold text-[#FF7A00]">${(estimatedCost * 0.6).toFixed(2)}</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Running Cost
+                </p>
+                <p className="text-[12px] font-semibold text-[#FF7A00]">
+                  ${(estimatedCost * 0.6).toFixed(2)}
+                </p>
               </div>
               <div className="bg-white/[0.04] rounded-xl p-3">
-                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">Power Draw</p>
+                <p className="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">
+                  Power Draw
+                </p>
                 <p className="text-[12px] font-semibold text-white">248 kW</p>
               </div>
             </div>

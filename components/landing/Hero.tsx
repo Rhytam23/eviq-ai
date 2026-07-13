@@ -38,7 +38,8 @@ export default function Hero() {
               transition={{ duration: 0.65, delay: 0.2 }}
               className="mt-6 max-w-[560px] text-[18px] md:text-[20px] leading-relaxed text-[#A0AEC0]"
             >
-              EVIQ AI is the world&apos;s first AI Operating System for electric vehicles. By connecting BMS telemetry with charger health data, we eliminate charging anxiety.
+              EVIQ AI is the world&apos;s first AI Operating System for electric vehicles. By
+              connecting BMS telemetry with charger health data, we eliminate charging anxiety.
             </motion.p>
 
             <motion.div
@@ -64,15 +65,21 @@ export default function Hero() {
             <div className="mt-14 border-t border-white/[0.06] pt-8 grid grid-cols-3 gap-6 text-left">
               <div>
                 <span className="text-white font-[700] text-[20px] md:text-[24px]">&lt;42ms</span>
-                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">Solver Latency</p>
+                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">
+                  Solver Latency
+                </p>
               </div>
               <div>
                 <span className="text-white font-[700] text-[20px] md:text-[24px]">99.4%</span>
-                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">Uptime Accuracy</p>
+                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">
+                  Uptime Accuracy
+                </p>
               </div>
               <div>
                 <span className="text-white font-[700] text-[20px] md:text-[24px]">14M+</span>
-                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">Miles Optimized</p>
+                <p className="text-[12px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">
+                  Miles Optimized
+                </p>
               </div>
             </div>
           </div>

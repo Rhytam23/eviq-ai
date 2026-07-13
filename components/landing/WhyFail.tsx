@@ -14,7 +14,8 @@ export default function WhyFail() {
             Why legacy charging maps fail.
           </h2>
           <p className="mt-4 text-[17px] md:text-[19px] text-[#A0AEC0] max-w-[620px] mx-auto leading-relaxed">
-            Existing maps only answer &quot;where is a charger.&quot; EVIQ AI predicts if it works, when it will be free, and how it impacts your battery cell health.
+            Existing maps only answer &quot;where is a charger.&quot; EVIQ AI predicts if it works,
+            when it will be free, and how it impacts your battery cell health.
           </p>
         </div>
 
@@ -34,14 +35,17 @@ export default function WhyFail() {
               <h3 className="text-[22px] font-bold text-[#546b85] mb-6">
                 Static & Reactive Databases
               </h3>
-              
+
               <ul className="space-y-6">
                 <li className="flex items-start gap-4">
                   <span className="text-red-500 font-bold mt-[2px]">✕</span>
                   <div>
-                    <h4 className="text-[15px] font-bold text-white/90">Static Occupancy Reports</h4>
+                    <h4 className="text-[15px] font-bold text-white/90">
+                      Static Occupancy Reports
+                    </h4>
                     <p className="text-[13px] text-[#546b85] mt-1">
-                      Shows chargers as &quot;Available&quot; based on stale data, leading to surprise queue times upon arrival.
+                      Shows chargers as &quot;Available&quot; based on stale data, leading to
+                      surprise queue times upon arrival.
                     </p>
                   </div>
                 </li>
@@ -50,7 +54,8 @@ export default function WhyFail() {
                   <div>
                     <h4 className="text-[15px] font-bold text-white/90">Phantom Green Dots</h4>
                     <p className="text-[13px] text-[#546b85] mt-1">
-                      Fails to recognize offline, damaged, or derated charger units until drivers manually report issues.
+                      Fails to recognize offline, damaged, or derated charger units until drivers
+                      manually report issues.
                     </p>
                   </div>
                 </li>
@@ -59,7 +64,8 @@ export default function WhyFail() {
                   <div>
                     <h4 className="text-[15px] font-bold text-white/90">Blind Charging Rates</h4>
                     <p className="text-[13px] text-[#546b85] mt-1">
-                      Forces constant maximum power charging speeds, driving up battery degradation rates by up to 3.2x.
+                      Forces constant maximum power charging speeds, driving up battery degradation
+                      rates by up to 3.2x.
                     </p>
                   </div>
                 </li>
@@ -93,7 +99,8 @@ export default function WhyFail() {
                   <div>
                     <h4 className="text-[15px] font-bold text-white">45-Min Queue Forecasts</h4>
                     <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                      Predicts station availability using incoming vehicle telemetry, locking charging slots ahead of arrivals.
+                      Predicts station availability using incoming vehicle telemetry, locking
+                      charging slots ahead of arrivals.
                     </p>
                   </div>
                 </li>
@@ -102,7 +109,8 @@ export default function WhyFail() {
                   <div>
                     <h4 className="text-[15px] font-bold text-white">Thermal & Uptime Scoring</h4>
                     <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                      Constantly scans charging unit health, screening out low-wattage or offline charging ports automatically.
+                      Constantly scans charging unit health, screening out low-wattage or offline
+                      charging ports automatically.
                     </p>
                   </div>
                 </li>
@@ -111,7 +119,8 @@ export default function WhyFail() {
                   <div>
                     <h4 className="text-[15px] font-bold text-white">Active Cell Preservation</h4>
                     <p className="text-[13.5px] text-[#A0AEC0] mt-1">
-                      Integrates dynamic battery state of health (SoH) profiles to deliver thermal-aware optimized charger rates.
+                      Integrates dynamic battery state of health (SoH) profiles to deliver
+                      thermal-aware optimized charger rates.
                     </p>
                   </div>
                 </li>
@@ -119,7 +128,9 @@ export default function WhyFail() {
             </div>
             <div className="mt-8 pt-6 border-t border-orange/10 text-[12px] text-orange font-mono flex justify-between items-center">
               <span>STATUS: ACTIVE CALIBRATING</span>
-              <span className="text-white bg-orange px-2 py-0.5 rounded text-[9.5px]">99.4% RELIABILITY SCORE</span>
+              <span className="text-white bg-orange px-2 py-0.5 rounded text-[9.5px]">
+                99.4% RELIABILITY SCORE
+              </span>
             </div>
           </motion.div>
         </div>

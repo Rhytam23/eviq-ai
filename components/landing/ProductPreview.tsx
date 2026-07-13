@@ -19,7 +19,8 @@ export default function ProductPreview() {
             Predictive dashboard in action.
           </h2>
           <p className="mt-4 text-[17px] md:text-[19px] text-[#A0AEC0] max-w-[620px] mx-auto leading-relaxed">
-            EVIQ AI plugs directly into consumer infotainment screens and commercial fleet command centers. Explore the dynamic interface below.
+            EVIQ AI plugs directly into consumer infotainment screens and commercial fleet command
+            centers. Explore the dynamic interface below.
           </p>
         </div>
 
@@ -48,7 +49,11 @@ export default function ProductPreview() {
                       : "bg-white/5 border border-white/5 text-[#A0AEC0] hover:bg-white/10"
                   }`}
                 >
-                  {tab === "route" ? "Journey HUD" : tab === "ports" ? "Port Diagnostics" : "Tariff Ledger"}
+                  {tab === "route"
+                    ? "Journey HUD"
+                    : tab === "ports"
+                      ? "Port Diagnostics"
+                      : "Tariff Ledger"}
                 </button>
               ))}
             </div>
@@ -69,8 +74,12 @@ export default function ProductPreview() {
                   {/* Route Telemetry */}
                   <div className="flex justify-between items-center border-b border-white/[0.04] pb-4">
                     <div>
-                      <h4 className="text-[17px] font-bold text-white">Journey Rerouting Simulation</h4>
-                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">HKUST Corridor ➔ Kowloon Highway Corridor</p>
+                      <h4 className="text-[17px] font-bold text-white">
+                        Journey Rerouting Simulation
+                      </h4>
+                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">
+                        HKUST Corridor ➔ Kowloon Highway Corridor
+                      </p>
                     </div>
                     <span className="px-2.5 py-1 rounded bg-orange/15 text-orange text-[10px] font-mono font-bold uppercase tracking-wider">
                       AUTOPILOT INGEST ACTIVE
@@ -79,19 +88,35 @@ export default function ProductPreview() {
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-4">
-                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">CURRENT ESTIMATE</span>
+                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">
+                        CURRENT ESTIMATE
+                      </span>
                       <span className="text-[20px] font-bold text-white mt-1 block">12% SoC</span>
-                      <span className="text-[11.5px] text-[#A0AEC0] mt-0.5 block">32 miles range remaining</span>
+                      <span className="text-[11.5px] text-[#A0AEC0] mt-0.5 block">
+                        32 miles range remaining
+                      </span>
                     </div>
                     <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-4">
-                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">AERO & WIND CORRECTION</span>
-                      <span className="text-[20px] font-bold text-orange mt-1 block">+14% Draw</span>
-                      <span className="text-[11.5px] text-[#A0AEC0] mt-0.5 block">Elevation climbed: 120m</span>
+                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">
+                        AERO & WIND CORRECTION
+                      </span>
+                      <span className="text-[20px] font-bold text-orange mt-1 block">
+                        +14% Draw
+                      </span>
+                      <span className="text-[11.5px] text-[#A0AEC0] mt-0.5 block">
+                        Elevation climbed: 120m
+                      </span>
                     </div>
                     <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-4">
-                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">REROUTE ACTION</span>
-                      <span className="text-[20px] font-bold text-white mt-1 block">Stop B Reserved</span>
-                      <span className="text-[11.5px] text-orange mt-0.5 block">Locking Kowloon Bay Hub</span>
+                      <span className="text-[10px] text-[#546b85] font-mono uppercase block">
+                        REROUTE ACTION
+                      </span>
+                      <span className="text-[20px] font-bold text-white mt-1 block">
+                        Stop B Reserved
+                      </span>
+                      <span className="text-[11.5px] text-orange mt-0.5 block">
+                        Locking Kowloon Bay Hub
+                      </span>
                     </div>
                   </div>
 
@@ -122,8 +147,12 @@ export default function ProductPreview() {
                   {/* Charger Diagnostics */}
                   <div className="flex justify-between items-center border-b border-white/[0.04] pb-4">
                     <div>
-                      <h4 className="text-[17px] font-bold text-white">Live Station Port Diagnostics</h4>
-                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">Kowloon Bay Super-Hub (Station B)</p>
+                      <h4 className="text-[17px] font-bold text-white">
+                        Live Station Port Diagnostics
+                      </h4>
+                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">
+                        Kowloon Bay Super-Hub (Station B)
+                      </p>
                     </div>
                     <span className="px-2.5 py-1 rounded bg-orange/15 text-orange text-[10px] font-mono font-bold uppercase tracking-wider">
                       Uptime: 99.4%
@@ -132,12 +161,35 @@ export default function ProductPreview() {
 
                   <div className="grid sm:grid-cols-4 gap-4">
                     {[
-                      { port: 1, speed: "350kW", status: "In Use", color: "text-[#546b85] border-white/5 bg-white/[0.01]" },
-                      { port: 2, speed: "350kW", status: "In Use", color: "text-[#546b85] border-white/5 bg-white/[0.01]" },
-                      { port: 3, speed: "350kW", status: "Ready", color: "text-orange border-orange bg-orange/5" },
-                      { port: 4, speed: "150kW", status: "Ready", color: "text-white border-white/10 bg-white/5" },
+                      {
+                        port: 1,
+                        speed: "350kW",
+                        status: "In Use",
+                        color: "text-[#546b85] border-white/5 bg-white/[0.01]",
+                      },
+                      {
+                        port: 2,
+                        speed: "350kW",
+                        status: "In Use",
+                        color: "text-[#546b85] border-white/5 bg-white/[0.01]",
+                      },
+                      {
+                        port: 3,
+                        speed: "350kW",
+                        status: "Ready",
+                        color: "text-orange border-orange bg-orange/5",
+                      },
+                      {
+                        port: 4,
+                        speed: "150kW",
+                        status: "Ready",
+                        color: "text-white border-white/10 bg-white/5",
+                      },
                     ].map((p) => (
-                      <div key={p.port} className={`border rounded-2xl p-4 flex flex-col justify-between ${p.color}`}>
+                      <div
+                        key={p.port}
+                        className={`border rounded-2xl p-4 flex flex-col justify-between ${p.color}`}
+                      >
                         <div>
                           <span className="text-[10px] font-mono uppercase block">CONNECTOR</span>
                           <span className="text-[18px] font-bold mt-1 block">Port {p.port}</span>
@@ -151,7 +203,8 @@ export default function ProductPreview() {
                   </div>
 
                   <p className="text-[12.5px] text-[#A0AEC0] italic leading-relaxed">
-                    *EVIQ AI models grid temperatures and handshake delays, recommending **Port 3** over other alternatives to secure 350kW rates.
+                    *EVIQ AI models grid temperatures and handshake delays, recommending **Port 3**
+                    over other alternatives to secure 350kW rates.
                   </p>
                 </motion.div>
               )}
@@ -168,8 +221,12 @@ export default function ProductPreview() {
                   {/* Pricing optimizations */}
                   <div className="flex justify-between items-center border-b border-white/[0.04] pb-4">
                     <div>
-                      <h4 className="text-[17px] font-bold text-white">Dynamic Tariff Optimizations</h4>
-                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">Avoiding peak periods to limit session expenses</p>
+                      <h4 className="text-[17px] font-bold text-white">
+                        Dynamic Tariff Optimizations
+                      </h4>
+                      <p className="text-[13px] text-[#A0AEC0] mt-0.5">
+                        Avoiding peak periods to limit session expenses
+                      </p>
                     </div>
                     <span className="px-2.5 py-1 rounded bg-orange/15 text-orange text-[10px] font-mono font-bold uppercase tracking-wider">
                       $7.68 SAVED OFF-PEAK
@@ -178,18 +235,24 @@ export default function ProductPreview() {
 
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div className="border border-white/5 bg-white/[0.01] rounded-2xl p-5">
-                      <span className="text-[10px] text-red-400 font-mono uppercase tracking-widest block mb-2">PEAK SPEED RATE</span>
+                      <span className="text-[10px] text-red-400 font-mono uppercase tracking-widest block mb-2">
+                        PEAK SPEED RATE
+                      </span>
                       <span className="text-[26px] font-bold text-white">$0.48 / kWh</span>
                       <p className="text-[12.5px] text-[#546b85] mt-1.5">
-                        High grid congestion period between 16:00 and 20:00. Rerouting algorithms bypass these zones.
+                        High grid congestion period between 16:00 and 20:00. Rerouting algorithms
+                        bypass these zones.
                       </p>
                     </div>
 
                     <div className="border border-orange/20 bg-orange/5 rounded-2xl p-5">
-                      <span className="text-[10px] text-orange font-mono uppercase tracking-widest block mb-2">EVIQ LOCKED SEGMENT</span>
+                      <span className="text-[10px] text-orange font-mono uppercase tracking-widest block mb-2">
+                        EVIQ LOCKED SEGMENT
+                      </span>
                       <span className="text-[26px] font-bold text-orange">$0.32 / kWh</span>
                       <p className="text-[12.5px] text-[#A0AEC0] mt-1.5">
-                        Dynamic tariff locking locks in off-peak slots, reducing commercial fleet costs by up to 33%.
+                        Dynamic tariff locking locks in off-peak slots, reducing commercial fleet
+                        costs by up to 33%.
                       </p>
                     </div>
                   </div>
@@ -209,7 +272,6 @@ export default function ProductPreview() {
             </div>
           </div>
         </div>
-
       </Container>
     </section>
   );

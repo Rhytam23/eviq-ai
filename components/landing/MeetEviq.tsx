@@ -53,7 +53,8 @@ export default function MeetEviq() {
             Six engines. One cohesive intelligence layer.
           </h2>
           <p className="mt-4 text-[17px] md:text-[19px] text-[#A0AEC0] max-w-[620px] leading-relaxed">
-            A modular operating system connecting vehicle CAN-bus streams, real-time grid pricing, and charging network APIs.
+            A modular operating system connecting vehicle CAN-bus streams, real-time grid pricing,
+            and charging network APIs.
           </p>
         </div>
 
@@ -72,12 +73,8 @@ export default function MeetEviq() {
                 <span className="text-[10px] font-bold tracking-wider text-orange font-mono uppercase block mb-3">
                   {f.tag}
                 </span>
-                <h3 className="text-[20px] font-bold text-white mb-3">
-                  {f.title}
-                </h3>
-                <p className="text-[14px] leading-relaxed text-[#A0AEC0]">
-                  {f.desc}
-                </p>
+                <h3 className="text-[20px] font-bold text-white mb-3">{f.title}</h3>
+                <p className="text-[14px] leading-relaxed text-[#A0AEC0]">{f.desc}</p>
               </div>
               <div className="mt-6 pt-4 border-t border-white/[0.04] text-[12.5px] font-mono text-white flex justify-between items-center">
                 <span>{f.metric}</span>

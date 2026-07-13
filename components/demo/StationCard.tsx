@@ -19,7 +19,15 @@ interface StationCardProps {
   reservationActive: boolean;
 }
 
-function ScoreBar({ value, max = 100, color = "#FF7A00" }: { value: number; max?: number; color?: string }) {
+function ScoreBar({
+  value,
+  max = 100,
+  color = "#FF7A00",
+}: {
+  value: number;
+  max?: number;
+  color?: string;
+}) {
   const pct = Math.min(100, Math.round((value / max) * 100));
   return (
     <div className="w-full h-1 bg-white/[0.07] rounded-full overflow-hidden">
@@ -96,25 +104,33 @@ export default function StationCard({
       {/* Key metrics grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">Speed</p>
+          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
+            Speed
+          </p>
           <p className="text-[13px] font-semibold text-white">{speed}</p>
         </div>
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">Rate</p>
-          <p className={`text-[13px] font-semibold ${isRecommended ? "text-[#FF7A00]" : "text-white"}`}>{price}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">Est. Wait</p>
-          <p className="text-[13px] font-semibold text-white">
-            {queue === 0 ? (
-              <span className="text-emerald-400">No queue</span>
-            ) : (
-              `${queue} min`
-            )}
+          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
+            Rate
+          </p>
+          <p
+            className={`text-[13px] font-semibold ${isRecommended ? "text-[#FF7A00]" : "text-white"}`}
+          >
+            {price}
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">Arrival SoC</p>
+          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
+            Est. Wait
+          </p>
+          <p className="text-[13px] font-semibold text-white">
+            {queue === 0 ? <span className="text-emerald-400">No queue</span> : `${queue} min`}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
+            Arrival SoC
+          </p>
           <p className="text-[13px] font-semibold text-white">{arrivalSoc}%</p>
         </div>
       </div>
@@ -122,17 +138,26 @@ export default function StationCard({
       {/* Reliability bar */}
       <div className="mb-3">
         <div className="flex justify-between mb-1">
-          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">Reliability</span>
+          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">
+            Reliability
+          </span>
           <span className="text-[10px] font-mono text-white/60">{reliability}%</span>
         </div>
-        <ScoreBar value={reliability} color={isRecommended ? "#FF7A00" : "rgba(255,255,255,0.25)"} />
+        <ScoreBar
+          value={reliability}
+          color={isRecommended ? "#FF7A00" : "rgba(255,255,255,0.25)"}
+        />
       </div>
 
       {/* AI Score bar */}
       <div className="mb-4">
         <div className="flex justify-between mb-1">
-          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">AI Score</span>
-          <span className={`text-[10px] font-mono font-bold ${isRecommended ? "text-[#FF7A00]" : "text-white/60"}`}>
+          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">
+            AI Score
+          </span>
+          <span
+            className={`text-[10px] font-mono font-bold ${isRecommended ? "text-[#FF7A00]" : "text-white/60"}`}
+          >
             {aiScore}/100
           </span>
         </div>
@@ -151,8 +176,8 @@ export default function StationCard({
           isRecommended && !reservationActive
             ? "bg-[#FF7A00] text-white hover:bg-[#FF8A15] active:scale-[0.98]"
             : reservationActive && isSelected
-            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 cursor-default"
-            : "bg-white/[0.06] text-white/50 border border-white/[0.07] hover:bg-white/[0.10] hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed"
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 cursor-default"
+              : "bg-white/[0.06] text-white/50 border border-white/[0.07] hover:bg-white/[0.10] hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed"
         }`}
       >
         {reservationActive && isSelected ? "Port Reserved ✓" : "Reserve Port"}
