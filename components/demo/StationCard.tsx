@@ -4,14 +4,19 @@ import { motion } from "framer-motion";
 interface StationCardProps {
   id: string;
   name: string;
-  speed: string;
-  connector: string;
-  price: string;
+  network: string;
+  powerKw: number;
+  connectorType: string;
+  portsAvailable: number;
+  portsTotal: number;
   pricePerKwh: number;
-  queue: number;
-  reliability: number;
-  aiScore: number;
+  currentQueueMinutes: number;
+  predictedQueueMinutes: number;
+  reliabilityScore: number;
   arrivalSoc: number;
+  chargingTimeMinutes: number;
+  distanceMiles: number;
+  durationMinutes: number;
   isRecommended: boolean;
   isSelected: boolean;
   onSelect: () => void;
@@ -19,46 +24,43 @@ interface StationCardProps {
   reservationActive: boolean;
 }
 
-function ScoreBar({
-  value,
-  max = 100,
-  color = "#FF7A00",
-}: {
-  value: number;
-  max?: number;
-  color?: string;
-}) {
-  const pct = Math.min(100, Math.round((value / max) * 100));
-  return (
-    <div className="w-full h-1 bg-white/[0.07] rounded-full overflow-hidden">
-      <motion.div
-        className="h-full rounded-full"
-        style={{ backgroundColor: color }}
-        initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      />
-    </div>
-  );
-}
-
 export default function StationCard({
   id,
   name,
-  speed,
-  connector,
-  price,
-  queue,
-  reliability,
-  aiScore,
+  network,
+  powerKw,
+  connectorType,
+  portsAvailable,
+  portsTotal,
+  pricePerKwh,
+  currentQueueMinutes,
+  predictedQueueMinutes,
+  reliabilityScore,
   arrivalSoc,
+  chargingTimeMinutes,
+  distanceMiles,
+  durationMinutes,
   isRecommended,
   isSelected,
   onSelect,
   onReserve,
   reservationActive,
 }: StationCardProps) {
-  const shortName = name.replace(/ \(Station [A-Z]\)/, "");
+  const shortName = name.split(" - ")[1] || name;
+
+  // AI confidence evaluation helper
+  const getReliabilityColor = (score: number) => {
+    if (score >= 95) return "text-cyan-400";
+    if (score >= 85) return "text-emerald-400";
+    if (score >= 70) return "text-amber-400";
+    return "text-rose-400";
+  };
+
+  const getSoCColor = (soc: number) => {
+    if (soc <= 10) return "text-rose-400";
+    if (soc <= 20) return "text-amber-400";
+    return "text-cyan-400";
+  };
 
   return (
     <motion.div
@@ -68,119 +70,125 @@ export default function StationCard({
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
       aria-pressed={isSelected}
-      aria-label={`Station ${id}: ${shortName}`}
-      className={`relative rounded-2xl p-5 cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
-        isRecommended
-          ? "bg-[#0F1A10] border border-[#FF7A00]/30"
-          : "bg-[#0A1018] border border-white/[0.07] hover:border-white/[0.14]"
-      } ${isSelected ? "ring-1 ring-[#FF7A00]/50" : ""}`}
+      className={`relative rounded-2xl p-5 cursor-pointer text-left transition-all duration-200 border ${
+        isSelected
+          ? "bg-zinc-900 border-cyan-400 shadow-[0_0_20px_rgba(0,240,255,0.1)]"
+          : isRecommended
+            ? "bg-[#09151c] border-cyan-500/35 hover:border-cyan-500/50"
+            : "bg-zinc-950 border-white/[0.06] hover:border-white/[0.12]"
+      }`}
       whileHover={{ y: -2 }}
-      transition={{ duration: 0.15 }}
     >
       {/* Recommended badge */}
       {isRecommended && (
         <div className="absolute top-4 right-4">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF7A00]/15 text-[#FF7A00] border border-[#FF7A00]/25">
-            AI Pick
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
+            AI RECOMMENDED
           </span>
         </div>
       )}
 
-      {/* Station ID + Name */}
-      <div className="mb-4 pr-16">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span
-            className={`text-[11px] font-mono font-bold w-5 h-5 rounded flex items-center justify-center ${
-              isRecommended ? "bg-[#FF7A00]/20 text-[#FF7A00]" : "bg-white/[0.06] text-white/50"
-            }`}
-          >
-            {id}
+      {/* Header Info */}
+      <div className="mb-4 pr-20">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+            {network}
           </span>
         </div>
-        <h4 className="text-[13px] font-semibold text-white leading-snug">{shortName}</h4>
-        <p className="text-[11px] text-white/40 mt-0.5 font-mono">{connector}</p>
+        <h4 className="text-sm font-semibold text-white leading-tight">{shortName}</h4>
+        <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+          {connectorType} · {powerKw} kW
+        </p>
       </div>
 
-      {/* Key metrics grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
+      {/* Main Grid Metrics */}
+      <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 mb-5 border-t border-b border-white/[0.05] py-3.5">
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
-            Speed
-          </p>
-          <p className="text-[13px] font-semibold text-white">{speed}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
-            Rate
-          </p>
-          <p
-            className={`text-[13px] font-semibold ${isRecommended ? "text-[#FF7A00]" : "text-white"}`}
-          >
-            {price}
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">Rate</p>
+          <p className="text-xs font-semibold text-white font-mono">
+            ${pricePerKwh.toFixed(2)}{" "}
+            <span className="text-[10px] font-normal text-zinc-500">/ kWh</span>
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
-            Est. Wait
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+            Availability
           </p>
-          <p className="text-[13px] font-semibold text-white">
-            {queue === 0 ? <span className="text-emerald-400">No queue</span> : `${queue} min`}
+          <p className="text-xs font-semibold text-white">
+            {portsAvailable} / {portsTotal}{" "}
+            <span className="text-[10px] text-zinc-500 font-normal">ports</span>
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-white/35 uppercase tracking-wider font-mono mb-0.5">
-            Arrival SoC
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+            Queue (Live / AI)
           </p>
-          <p className="text-[13px] font-semibold text-white">{arrivalSoc}%</p>
+          <p className="text-xs font-semibold text-white">
+            {currentQueueMinutes === 0 ? "None" : `${currentQueueMinutes}m`}
+            <span className="text-[10px] text-zinc-500 font-normal"> / </span>
+            <span className="text-cyan-400 font-mono">{predictedQueueMinutes}m AI</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+            Est. Arrival SoC
+          </p>
+          <p className={`text-xs font-semibold font-mono ${getSoCColor(arrivalSoc)}`}>
+            {arrivalSoc}% SoC
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+            Distance / ETA
+          </p>
+          <p className="text-xs font-semibold text-white font-mono">
+            {distanceMiles.toFixed(1)} mi{" "}
+            <span className="text-[10px] font-normal text-zinc-500">/ {durationMinutes}m</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+            Charge Duration
+          </p>
+          <p className="text-xs font-semibold text-white font-mono">
+            {chargingTimeMinutes} mins{" "}
+            <span className="text-[9px] font-normal text-zinc-500">(to 80%)</span>
+          </p>
         </div>
       </div>
 
-      {/* Reliability bar */}
-      <div className="mb-3">
-        <div className="flex justify-between mb-1">
-          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">
-            Reliability
-          </span>
-          <span className="text-[10px] font-mono text-white/60">{reliability}%</span>
-        </div>
-        <ScoreBar
-          value={reliability}
-          color={isRecommended ? "#FF7A00" : "rgba(255,255,255,0.25)"}
-        />
-      </div>
-
-      {/* AI Score bar */}
+      {/* Reliability Telemetry bar */}
       <div className="mb-4">
-        <div className="flex justify-between mb-1">
-          <span className="text-[10px] text-white/35 uppercase tracking-wider font-mono">
-            AI Score
-          </span>
-          <span
-            className={`text-[10px] font-mono font-bold ${isRecommended ? "text-[#FF7A00]" : "text-white/60"}`}
-          >
-            {aiScore}/100
+        <div className="flex justify-between text-[10px] font-mono mb-1">
+          <span className="text-zinc-500 uppercase tracking-wider">Reliability Score</span>
+          <span className={`font-bold ${getReliabilityColor(reliabilityScore)}`}>
+            {reliabilityScore}% AI
           </span>
         </div>
-        <ScoreBar value={aiScore} color={isRecommended ? "#FF7A00" : "rgba(255,255,255,0.25)"} />
+        <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${isRecommended ? "bg-cyan-400" : "bg-zinc-700"}`}
+            style={{ width: `${reliabilityScore}%` }}
+          />
+        </div>
       </div>
 
-      {/* Reserve CTA */}
+      {/* Actions */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onReserve();
         }}
         disabled={reservationActive && !isSelected}
-        aria-label={`Reserve port at ${shortName}`}
-        className={`w-full py-2 rounded-xl text-[12px] font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
-          isRecommended && !reservationActive
-            ? "bg-[#FF7A00] text-white hover:bg-[#FF8A15] active:scale-[0.98]"
-            : reservationActive && isSelected
-              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 cursor-default"
-              : "bg-white/[0.06] text-white/50 border border-white/[0.07] hover:bg-white/[0.10] hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed"
+        className={`w-full py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+          reservationActive && isSelected
+            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 cursor-default"
+            : isRecommended && !reservationActive
+              ? "bg-cyan-400 text-zinc-950 hover:bg-cyan-300 font-bold active:scale-[0.98]"
+              : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-white/[0.02] disabled:opacity-30 disabled:cursor-not-allowed"
         }`}
       >
-        {reservationActive && isSelected ? "Port Reserved ✓" : "Reserve Port"}
+        {reservationActive && isSelected ? "Active Booking ✓" : "Reserve Charger Port"}
       </button>
     </motion.div>
   );

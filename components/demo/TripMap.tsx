@@ -1,283 +1,270 @@
 "use client";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { Coordinate } from "@/lib/api";
 
 interface Station {
   id: string;
-  x: number;
-  y: number;
   name: string;
+  lat: number;
+  lng: number;
   isRecommended: boolean;
   isSelected: boolean;
 }
 
 interface TripMapProps {
-  corridor: "hkust" | "airport" | "central";
-  trafficSeverity: "normal" | "dense" | "gridlock";
-  weatherStress: "nominal" | "rain" | "heat";
+  origin: Coordinate;
+  destination: Coordinate;
   stations: Station[];
+  routeCoordinates: [number, number][]; // [lng, lat]
+  selectedStationId: string | null;
   onSelectStation: (id: string) => void;
 }
 
-// Corridor route paths in SVG coordinate space (viewBox 0 0 700 420)
-const CORRIDORS = {
-  hkust: {
-    label: "HKUST Corridor",
-    vehiclePos: { x: 90, y: 310 },
-    destPos: { x: 580, y: 85 },
-    routePath: "M 90 310 C 140 290 180 260 240 220 S 340 160 400 140 S 500 110 580 85",
-    distance: "42 mi",
-  },
-  airport: {
-    label: "Airport Highway",
-    vehiclePos: { x: 100, y: 340 },
-    destPos: { x: 620, y: 60 },
-    routePath: "M 100 340 C 120 300 160 280 200 250 S 280 200 360 165 S 500 100 620 60",
-    distance: "58 mi",
-  },
-  central: {
-    label: "Central District",
-    vehiclePos: { x: 80, y: 280 },
-    destPos: { x: 520, y: 110 },
-    routePath: "M 80 280 C 130 260 200 240 270 210 S 380 170 450 145 S 490 120 520 110",
-    distance: "31 mi",
-  },
-};
-
-const TRAFFIC_COLOR = {
-  normal: "#FFFFFF",
-  dense: "#FFA640",
-  gridlock: "#EF4444",
-};
-
-// Fixed station SVG positions — independent of corridor
-const STATION_POSITIONS = {
-  A: { x: 190, y: 235 },
-  B: { x: 370, y: 155 },
-  C: { x: 510, y: 120 },
-};
-
 export default function TripMap({
-  corridor,
-  trafficSeverity,
+  origin,
+  destination,
   stations,
+  routeCoordinates,
+  selectedStationId,
   onSelectStation,
 }: TripMapProps) {
-  const route = CORRIDORS[corridor];
-  const routeColor = TRAFFIC_COLOR[trafficSeverity];
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Initialize Map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    // Use CartoDB Dark Matter GL style - premium, beautiful, and completely free without API keys
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+      center: [origin.lng, origin.lat],
+      zoom: 11,
+      attributionControl: false,
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+
+    map.on("load", () => {
+      setMapLoaded(true);
+    });
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update Route Polyline when coordinates change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    // Source and Layer IDs
+    const sourceId = "trip-route";
+    const layerId = "trip-route-line";
+    const glowLayerId = "trip-route-glow";
+
+    // Format coordinates for GeoJSON
+    const geojson: any = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates:
+          routeCoordinates.length > 0
+            ? routeCoordinates
+            : [
+                [origin.lng, origin.lat],
+                [destination.lng, destination.lat],
+              ],
+      },
+    };
+
+    if (map.getSource(sourceId)) {
+      (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojson);
+    } else {
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: geojson,
+      });
+
+      // Add route glow layer
+      map.addLayer({
+        id: glowLayerId,
+        type: "line",
+        source: sourceId,
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": "#00F0FF",
+          "line-width": 6,
+          "line-opacity": 0.15,
+        },
+      });
+
+      // Add main route line layer
+      map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": "#00F0FF",
+          "line-width": 3,
+          "line-opacity": 0.85,
+        },
+      });
+    }
+
+    // Fit map bounds to contain the route
+    if (routeCoordinates.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      routeCoordinates.forEach((coord) => bounds.extend(coord as [number, number]));
+      // Extend bounds to cover stations as well
+      stations.forEach((st) => bounds.extend([st.lng, st.lat]));
+
+      map.fitBounds(bounds, {
+        padding: 50,
+        maxZoom: 14,
+        duration: 1000,
+      });
+    }
+  }, [mapLoaded, routeCoordinates, origin, destination, stations]);
+
+  // Update Markers when stations or selections change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    // Clear existing markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    // 1. Add Vehicle Marker
+    const vehicleEl = document.createElement("div");
+    vehicleEl.className = "relative w-8 h-8 flex items-center justify-center cursor-pointer";
+    vehicleEl.innerHTML = `
+      <div class="absolute inset-0 bg-cyan-400/25 rounded-full animate-ping" style="animation-duration: 2s;"></div>
+      <div class="w-4 h-4 bg-[#00F0FF] rounded-full border-2 border-white shadow-[0_0_10px_rgba(0,240,255,0.8)]"></div>
+      <div class="absolute -top-6 text-[9px] font-mono font-bold text-[#00F0FF] bg-zinc-950/80 px-1 py-0.5 rounded border border-cyan-500/30 whitespace-nowrap">VEHICLE</div>
+    `;
+    const vehicleMarker = new maplibregl.Marker({ element: vehicleEl })
+      .setLngLat([origin.lng, origin.lat])
+      .addTo(map);
+    markersRef.current.push(vehicleMarker);
+
+    // 2. Add Destination Marker
+    const destEl = document.createElement("div");
+    destEl.className = "flex flex-col items-center cursor-pointer";
+    destEl.innerHTML = `
+      <div class="w-8 h-8 bg-zinc-900 border border-white/20 text-white rounded-lg flex items-center justify-center font-mono font-bold text-xs shadow-xl hover:border-cyan-500 transition-colors">
+        ⬡
+      </div>
+      <div class="text-[9px] font-mono text-white/50 bg-zinc-950/85 px-1 rounded mt-0.5 whitespace-nowrap">DESTINATION</div>
+    `;
+    const destMarker = new maplibregl.Marker({ element: destEl })
+      .setLngLat([destination.lng, destination.lat])
+      .addTo(map);
+    markersRef.current.push(destMarker);
+
+    // 3. Add Station Markers
+    stations.forEach((st) => {
+      const stationEl = document.createElement("div");
+      stationEl.className = `flex flex-col items-center cursor-pointer group`;
+
+      const isSelected = selectedStationId === st.id || st.isSelected;
+      const isRec = st.isRecommended;
+
+      let borderClass = "border-white/20 bg-zinc-950 text-white/70";
+      let ringGlow = "";
+      let labelClass = "text-white/40 bg-zinc-950/80";
+
+      if (isSelected) {
+        borderClass = "border-cyan-400 bg-cyan-950 text-cyan-400 scale-110";
+        ringGlow = "shadow-[0_0_12px_rgba(0,240,255,0.6)]";
+        labelClass = "text-cyan-400 bg-zinc-950 border-cyan-400/50";
+      } else if (isRec) {
+        borderClass = "border-cyan-500/60 bg-zinc-900 text-cyan-300";
+        labelClass = "text-cyan-300 bg-zinc-950 border-cyan-500/20";
+        ringGlow = "shadow-[0_0_8px_rgba(0,240,255,0.3)] animate-pulse";
+      }
+
+      stationEl.innerHTML = `
+        <div class="relative w-8 h-8 rounded-full border-2 ${borderClass} ${ringGlow} flex items-center justify-center font-bold text-xs transition-all duration-200">
+          ⚡
+          ${isRec ? `<div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full border border-zinc-950"></div>` : ""}
+        </div>
+        <div class="text-[8px] font-mono px-1 py-0.5 rounded border border-white/5 mt-1 max-w-[90px] truncate text-center ${labelClass}">
+          ${st.name}
+        </div>
+      `;
+
+      // Handle marker click
+      stationEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onSelectStation(st.id);
+      });
+
+      const stationMarker = new maplibregl.Marker({ element: stationEl })
+        .setLngLat([st.lng, st.lat])
+        .addTo(map);
+      markersRef.current.push(stationMarker);
+    });
+  }, [mapLoaded, stations, selectedStationId, origin, destination, onSelectStation]);
+
+  // Center and zoom when selectedStationId changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !selectedStationId) return;
+
+    const selectedStation = stations.find((st) => st.id === selectedStationId);
+    if (selectedStation) {
+      map.flyTo({
+        center: [selectedStation.lng, selectedStation.lat],
+        zoom: 13,
+        essential: true,
+        duration: 1200,
+      });
+    }
+  }, [selectedStationId, mapLoaded, stations]);
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#070D14] border border-white/[0.07]">
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-
-      {/* Map legend */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-3">
-        <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
-          {route.label} • {route.distance}
-        </span>
-        <span
-          className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded"
-          style={{
-            color: routeColor,
-            background: `${routeColor}18`,
-          }}
-        >
-          {trafficSeverity === "normal"
-            ? "Clear"
-            : trafficSeverity === "dense"
-              ? "Moderate Traffic"
-              : "Heavy Traffic"}
-        </span>
-      </div>
-
-      <svg viewBox="0 0 700 420" className="w-full h-full" aria-label="Interactive trip map">
-        {/* Road network (static background roads) */}
-        <g opacity="0.12" stroke="#FFFFFF" strokeWidth="1" fill="none">
-          <path d="M 0 200 Q 200 210 400 195 T 700 200" />
-          <path d="M 0 280 Q 150 270 300 265 T 700 270" />
-          <path d="M 100 0 Q 130 150 120 300 T 110 420" />
-          <path d="M 300 0 Q 310 100 300 200 T 295 420" />
-          <path d="M 500 0 Q 510 100 500 200 T 490 420" />
-          <path d="M 0 120 Q 250 100 400 115 T 700 110" />
-        </g>
-
-        {/* Animated route path */}
-        <motion.path
-          key={corridor + trafficSeverity}
-          d={route.routePath}
-          fill="none"
-          stroke={routeColor}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          opacity={0.85}
-          strokeDasharray="800"
-          initial={{ strokeDashoffset: 800 }}
-          animate={{ strokeDashoffset: 0 }}
-          transition={{ duration: 1.4, ease: "easeInOut" }}
-        />
-
-        {/* Route glow */}
-        <motion.path
-          key={`glow-${corridor}`}
-          d={route.routePath}
-          fill="none"
-          stroke={routeColor}
-          strokeWidth="6"
-          strokeLinecap="round"
-          opacity={0.12}
-          strokeDasharray="800"
-          initial={{ strokeDashoffset: 800 }}
-          animate={{ strokeDashoffset: 0 }}
-          transition={{ duration: 1.4, ease: "easeInOut" }}
-        />
-
-        {/* Station markers */}
-        {stations.map((st) => {
-          const pos = STATION_POSITIONS[st.id as keyof typeof STATION_POSITIONS];
-          if (!pos) return null;
-          return (
-            <g
-              key={st.id}
-              onClick={() => onSelectStation(st.id)}
-              className="cursor-pointer"
-              role="button"
-              aria-label={`Select station ${st.id}: ${st.name}`}
-            >
-              {/* Outer ring for recommended */}
-              {st.isRecommended && (
-                <motion.circle
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={18}
-                  fill="none"
-                  stroke="#FF7A00"
-                  strokeWidth="1.5"
-                  opacity={0.4}
-                  animate={{ r: [16, 22, 16], opacity: [0.4, 0.15, 0.4] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                />
-              )}
-              {/* Station dot */}
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={st.isSelected ? 9 : 7}
-                fill={
-                  st.isSelected
-                    ? "#FF7A00"
-                    : st.isRecommended
-                      ? "rgba(255,122,0,0.4)"
-                      : "rgba(255,255,255,0.15)"
-                }
-                stroke={st.isSelected || st.isRecommended ? "#FF7A00" : "rgba(255,255,255,0.35)"}
-                strokeWidth={st.isSelected ? 2 : 1.5}
-                style={{ transition: "all 0.2s ease" }}
-              />
-              {/* Station label */}
-              <text
-                x={pos.x}
-                y={pos.y - 15}
-                textAnchor="middle"
-                fill={st.isSelected || st.isRecommended ? "#FF7A00" : "rgba(255,255,255,0.55)"}
-                fontSize="10"
-                fontFamily="monospace"
-                fontWeight="700"
-              >
-                {st.id}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Vehicle marker */}
-        <motion.g
-          key={`vehicle-${corridor}`}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Pulsing ring */}
-          <motion.circle
-            cx={route.vehiclePos.x}
-            cy={route.vehiclePos.y}
-            r={14}
-            fill="none"
-            stroke="#FF7A00"
-            strokeWidth="1"
-            opacity={0.3}
-            animate={{ r: [12, 18, 12], opacity: [0.3, 0.08, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          {/* Vehicle dot */}
-          <circle cx={route.vehiclePos.x} cy={route.vehiclePos.y} r={6} fill="#FF7A00" />
-          {/* "YOU" label */}
-          <text
-            x={route.vehiclePos.x}
-            y={route.vehiclePos.y - 14}
-            textAnchor="middle"
-            fill="#FF7A00"
-            fontSize="9"
-            fontFamily="monospace"
-            fontWeight="700"
-          >
-            YOU
-          </text>
-        </motion.g>
-
-        {/* Destination marker */}
-        <g>
-          <rect
-            x={route.destPos.x - 10}
-            y={route.destPos.y - 10}
-            width={20}
-            height={20}
-            rx={4}
-            fill="rgba(255,255,255,0.08)"
-            stroke="rgba(255,255,255,0.3)"
-            strokeWidth="1.5"
-          />
-          <text
-            x={route.destPos.x}
-            y={route.destPos.y + 4}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.7)"
-            fontSize="10"
-            fontFamily="monospace"
-            fontWeight="700"
-          >
-            ⬡
-          </text>
-          <text
-            x={route.destPos.x}
-            y={route.destPos.y + 22}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.4)"
-            fontSize="9"
-            fontFamily="monospace"
-          >
-            DEST
-          </text>
-        </g>
-      </svg>
-
-      {/* Station legend bottom-right */}
-      <div className="absolute bottom-3 right-3 flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[#FF7A00]" />
-          <span className="text-[9px] font-mono text-white/35 uppercase">Recommended</span>
+    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-zinc-950 border border-white/[0.06]">
+      {/* Loading overlay */}
+      {!mapLoaded && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-6 h-6 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></div>
+            <span className="text-xs font-mono text-zinc-500">
+              INITIALIZING VECTOR TELEMETRY...
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-white/20 border border-white/30" />
-          <span className="text-[9px] font-mono text-white/35 uppercase">Alternative</span>
-        </div>
-      </div>
+      )}
+
+      {/* Map Element */}
+      <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Style overrides for custom map labels/attributions */}
+      <style jsx global>{`
+        .maplibregl-ctrl-attrib {
+          display: none !important;
+        }
+      `}</style>
     </div>
   );
 }
