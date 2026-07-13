@@ -117,11 +117,9 @@ dist
 .DS_Store
 Thumbs.db
 
-# GridMind Proprietary and Internal Documents
+# EVIQ AI — Internal Documents (do not publish)
 BUILD_BIBLE.md
 EXPERIENCE_BIBLE.md
 THESIS.md
 IMPLEMENTATION_ROADMAP.md
-gridmind-landing.html
-PROPOSAL.md
-PROPOSAL.md
+gridmind-landing.html
