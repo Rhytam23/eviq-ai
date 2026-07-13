@@ -7,46 +7,46 @@ export default function Nav() {
     <motion.header
       initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="fixed top-0 inset-x-0 z-50"
     >
-      <div className="glass border-b border-black/[0.06]">
-        <Container className="h-[68px] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-[30px] h-[30px] rounded-[9px] bg-slate-900 flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-[1px] rounded-[8px] border border-white/10" />
-              <div className="w-[10px] h-[10px] rounded-[3px] bg-orange orange-glow" />
+      <div className="glass border-b border-white/[0.06]">
+        <Container className="h-[64px] flex items-center justify-between">
+          {/* Wordmark */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-[28px] h-[28px] rounded-[8px] bg-[#0A1018] border border-white/[0.08] flex items-center justify-center">
+              <div className="w-[9px] h-[9px] rounded-[2px] bg-orange" />
             </div>
-            <span className="text-[17px] tracking-[-0.015em] font-[600] text-white">EVIQ AI</span>
-            <span className="text-[10.5px] font-[550] tracking-wider text-ink-350 uppercase ml-1 hidden sm:inline">
-              AI MOBILITY
-            </span>
+            <span className="text-[16px] tracking-[-0.02em] font-semibold text-white">EVIQ AI</span>
           </div>
-          <nav className="hidden md:flex items-center gap-9 text-[14px] text-[#A0AEC0] font-[500]">
-            <a href="#product" className="hover:text-white transition-colors">
-              Product
+
+          {/* Nav links */}
+          <nav className="hidden md:flex items-center gap-8 text-[13.5px] text-[#A0AEC0] font-medium">
+            <a href="#why" className="hover:text-white transition-colors">
+              Why EVIQ
             </a>
-            <a href="#architecture" className="hover:text-white transition-colors">
-              Architecture
+            <a href="#platform" className="hover:text-white transition-colors">
+              Platform
             </a>
-            <a href="#impact" className="hover:text-white transition-colors">
-              Impact
+            <a href="#decision-engine" className="hover:text-white transition-colors">
+              AI Engine
             </a>
-            <a href="#customers" className="hover:text-white transition-colors">
-              Customers
+            <a href="#demo-preview" className="hover:text-white transition-colors">
+              Preview
             </a>
           </nav>
+
+          {/* CTAs */}
           <div className="flex items-center gap-3">
             <a
               href="/demo"
-              className="text-[13.5px] font-[600] text-orange hidden sm:flex items-center gap-1.5 mr-2 hover:text-white transition-colors"
+              className="text-[13px] font-semibold text-white/60 hidden sm:block hover:text-white transition-colors"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse" />
-              Interactive Demo
+              Live demo
             </a>
             <a
               href="#access"
-              className="text-[13.5px] font-[600] px-[16px] py-[9px] rounded-full bg-orange text-white hover:bg-orange/90 transition-colors"
+              className="text-[13px] font-semibold px-[16px] py-[8px] rounded-full bg-orange text-white hover:bg-orange/90 transition-colors"
             >
               Early access
             </a>
