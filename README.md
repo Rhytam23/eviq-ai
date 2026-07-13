@@ -182,7 +182,7 @@ Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) to u
 
 ## 📬 Contact
 
-For pilots, API licensing, or investment inquiries, contact the founders at [founders@eviq.ai](mailto:founders@eviq.ai).
+For pilots, API licensing, or investment inquiries, contact the founders at [Founder](mailto:2020sumoy@gmail.com).
 
 ---
 
