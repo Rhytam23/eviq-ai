@@ -22,6 +22,10 @@ interface StationCardProps {
   onSelect: () => void;
   onReserve: () => void;
   reservationActive: boolean;
+  /** 1-based rank from the ranking engine (only set for top-10 recommended chargers) */
+  rank?: number;
+  /** Human-readable reason this charger was selected */
+  selectionReason?: string;
 }
 
 export default function StationCard({
@@ -45,6 +49,8 @@ export default function StationCard({
   onSelect,
   onReserve,
   reservationActive,
+  rank,
+  selectionReason,
 }: StationCardProps) {
   const shortName = name.split(" - ")[1] || name;
 
@@ -79,17 +85,35 @@ export default function StationCard({
       }`}
       whileHover={{ y: -2 }}
     >
-      {/* Recommended badge */}
-      {isRecommended && (
-        <div className="absolute top-4 right-4">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
-            AI RECOMMENDED
+      {/* Rank badge + Recommended badge row */}
+      <div className="flex items-start justify-between mb-4">
+        {/* Left: rank number */}
+        {rank !== undefined ? (
+          <div
+            className={`flex items-center justify-center w-7 h-7 rounded-full font-mono font-extrabold text-xs shrink-0 ${
+              rank === 1
+                ? "bg-cyan-400 text-zinc-950 shadow-[0_0_12px_rgba(0,240,255,0.5)]"
+                : rank <= 3
+                  ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30"
+                  : "bg-white/[0.06] text-zinc-400 border border-white/[0.08]"
+            }`}
+          >
+            #{rank}
+          </div>
+        ) : (
+          <div className="w-7" />
+        )}
+
+        {/* Right: recommended badge */}
+        {isRecommended && (
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 shrink-0">
+            AI PICK
           </span>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Header Info */}
-      <div className="mb-4 pr-20">
+      <div className="mb-4">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
             {network}
@@ -172,6 +196,14 @@ export default function StationCard({
           />
         </div>
       </div>
+
+      {/* Selection reason */}
+      {selectionReason && (
+        <div className="mb-3 px-2.5 py-2 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
+          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-0.5">Reason</p>
+          <p className="text-[11px] text-cyan-300/80 leading-snug">{selectionReason}</p>
+        </div>
+      )}
 
       {/* Actions */}
       <button

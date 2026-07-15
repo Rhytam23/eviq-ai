@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
   Coordinate,
@@ -12,7 +12,9 @@ import {
   getWeather,
   getChargingStations,
   getDistanceToNearestRoad,
+  reverseGeocode,
 } from "@/lib/api";
+import { rankStations, RankingResult } from "@/lib/ranking";
 
 import StationCard from "@/components/demo/StationCard";
 import AiRecommendation from "@/components/demo/AiRecommendation";
@@ -71,50 +73,43 @@ const VEHICLES: VehicleProfile[] = [
   },
 ];
 
-// ─── Corridor Presets ───────────────────────────────────────────────────────
-interface CorridorPreset {
-  id: string;
-  name: string;
-  originName: string;
-  originCoord: Coordinate;
-  destName: string;
-  destCoord: Coordinate;
+// ─── Driving Corridor Route Sampler ──────────────────────────────────────────
+function sampleRoute(routeCoords: [number, number][], intervalMeters: number): Coordinate[] {
+  if (routeCoords.length === 0) return [];
+  const samples: Coordinate[] = [];
+  
+  // Start with the first point (origin)
+  const first = routeCoords[0];
+  samples.push({ lng: first[0], lat: first[1] });
+  
+  let accumulatedDist = 0;
+  let lastLat = first[1];
+  let lastLng = first[0];
+  
+  for (let i = 1; i < routeCoords.length; i++) {
+    const [lng, lat] = routeCoords[i];
+    const dist = getDistanceLatLng(lastLat, lastLng, lat, lng);
+    accumulatedDist += dist;
+    
+    if (accumulatedDist >= intervalMeters) {
+      samples.push({ lat, lng });
+      accumulatedDist = 0;
+    }
+    
+    lastLat = lat;
+    lastLng = lng;
+  }
+  
+  // Always include the last point (destination) if it's not already in there
+  const last = routeCoords[routeCoords.length - 1];
+  const lastSample = samples[samples.length - 1];
+  const distToLast = getDistanceLatLng(lastSample.lat, lastSample.lng, last[1], last[0]);
+  if (distToLast > 1000) { // if the last point is > 1km away from the last sample
+    samples.push({ lat: last[1], lng: last[0] });
+  }
+  
+  return samples;
 }
-
-const PRESETS: CorridorPreset[] = [
-  {
-    id: "silicon-valley",
-    name: "Silicon Valley Corridor (SF → San Jose)",
-    originName: "San Francisco, CA",
-    originCoord: { lat: 37.7749, lng: -122.4194 },
-    destName: "San Jose, CA",
-    destCoord: { lat: 37.3382, lng: -121.8863 },
-  },
-  {
-    id: "hong-kong",
-    name: "Hong Kong Express (HKUST → Airport)",
-    originName: "HKUST, Hong Kong",
-    originCoord: { lat: 22.3364, lng: 114.2655 },
-    destName: "Hong Kong International Airport",
-    destCoord: { lat: 22.308, lng: 113.9185 },
-  },
-  {
-    id: "london",
-    name: "London Commuter (London → Heathrow)",
-    originName: "London, UK",
-    originCoord: { lat: 51.5074, lng: -0.1278 },
-    destName: "Heathrow Airport",
-    destCoord: { lat: 51.47, lng: -0.4543 },
-  },
-  {
-    id: "bangalore",
-    name: "Bangalore Tech Corridor (Electronic City → Airport)",
-    originName: "Electronic City, Bengaluru",
-    originCoord: { lat: 12.8452, lng: 77.6602 },
-    destName: "Kempegowda International Airport",
-    destCoord: { lat: 13.1986, lng: 77.7066 },
-  },
-];
 
 function deduplicateStations(stations: ApiChargingStation[]): ApiChargingStation[] {
   const merged: ApiChargingStation[] = [];
@@ -165,12 +160,15 @@ function getMinDistanceToRoute(station: Coordinate, routeCoords: [number, number
 
 export default function DemoPage() {
   // ─── State ────────────────────────────────────────────────────────────────
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("silicon-valley");
-  const [originInput, setOriginInput] = useState<string>("");
-  const [destInput, setDestInput] = useState<string>("");
+  const [originInput, setOriginInput] = useState<string>("New York, NY");
+  const [destInput, setDestInput] = useState<string>("Boston, MA");
 
-  const [originCoord, setOriginCoord] = useState<Coordinate>(PRESETS[0].originCoord);
-  const [destCoord, setDestCoord] = useState<Coordinate>(PRESETS[0].destCoord);
+  const [originCoord, setOriginCoord] = useState<Coordinate>({ lat: 40.7128, lng: -74.006 });
+  const [destCoord, setDestCoord] = useState<Coordinate>({ lat: 42.3601, lng: -71.0589 });
+
+  const [isOriginSelected, setIsOriginSelected] = useState<boolean>(false);
+  const [isDestSelected, setIsDestSelected] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
 
   const [batterySoc, setBatterySoc] = useState<number>(25);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("v-tesla");
@@ -211,15 +209,38 @@ export default function DemoPage() {
   const [loadingOriginSuggestions, setLoadingOriginSuggestions] = useState<boolean>(false);
   const [loadingDestSuggestions, setLoadingDestSuggestions] = useState<boolean>(false);
 
+  // On-mount: Dynamically geocode the default route live (no hardcoded coordinates lookup)
+  useEffect(() => {
+    const initDefaultRoute = async () => {
+      setLoading(true);
+      try {
+        const geoOrigin = await geocodeAddress("New York, NY");
+        const geoDest = await geocodeAddress("Boston, MA");
+        if (geoOrigin && geoDest) {
+          setIsOriginSelected(true);
+          setIsDestSelected(true);
+          setOriginCoord(geoOrigin);
+          setDestCoord(geoDest);
+        }
+      } catch (err) {
+        console.error("Mount route initialization failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initDefaultRoute();
+  }, []);
+
   // Debounced effect for Origin Input
   useEffect(() => {
-    if (originInput.trim().length < 3) {
+    if (isOriginSelected) {
+      setIsOriginSelected(false);
       setOriginSuggestions([]);
       setLoadingOriginSuggestions(false);
       return;
     }
-    const activePreset = PRESETS.find((p) => p.originName === originInput);
-    if (activePreset) {
+    if (originInput.trim().length < 3) {
+      setOriginSuggestions([]);
       setLoadingOriginSuggestions(false);
       return;
     }
@@ -249,17 +270,18 @@ export default function DemoPage() {
     }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [originInput]);
+  }, [originInput, isOriginSelected]);
 
   // Debounced effect for Destination Input
   useEffect(() => {
-    if (destInput.trim().length < 3) {
+    if (isDestSelected) {
+      setIsDestSelected(false);
       setDestSuggestions([]);
       setLoadingDestSuggestions(false);
       return;
     }
-    const activePreset = PRESETS.find((p) => p.destName === destInput);
-    if (activePreset) {
+    if (destInput.trim().length < 3) {
+      setDestSuggestions([]);
       setLoadingDestSuggestions(false);
       return;
     }
@@ -289,20 +311,57 @@ export default function DemoPage() {
     }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [destInput]);
+  }, [destInput, isDestSelected]);
 
-  // ─── Preset synchronization ────────────────────────────────────────────────
-  useEffect(() => {
-    const preset = PRESETS.find((p) => p.id === selectedPresetId);
-    if (preset) {
-      setOriginInput(preset.originName);
-      setDestInput(preset.destName);
-      setOriginCoord(preset.originCoord);
-      setDestCoord(preset.destCoord);
-      setSelectedStationId(null);
-      setReservationStatus("NONE");
+  // Swap origin and destination endpoints
+  const handleSwap = () => {
+    setIsOriginSelected(true);
+    setIsDestSelected(true);
+    
+    const tempInput = originInput;
+    const tempCoord = originCoord;
+    
+    setOriginInput(destInput);
+    setOriginCoord(destCoord);
+    setDestInput(tempInput);
+    setDestCoord(tempCoord);
+  };
+
+  // Geolocate user and reverse-geocode to name
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
     }
-  }, [selectedPresetId]);
+    
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const coord = { lat: latitude, lng: longitude };
+        
+        try {
+          const resolvedName = await reverseGeocode(latitude, longitude);
+          setIsOriginSelected(true);
+          setOriginInput(resolvedName);
+          setOriginCoord(coord);
+        } catch (err) {
+          console.error(err);
+          setIsOriginSelected(true);
+          setOriginInput(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setOriginCoord(coord);
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert(`Failed to retrieve your location: ${error.message}`);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   // ─── Fetch Route, Weather, and Stations ─────────────────────────────────────
   const triggerJourneyPlan = async () => {
@@ -320,38 +379,76 @@ export default function DemoPage() {
       const weather = await getWeather(destCoord.lat, destCoord.lng);
       setWeatherData(weather);
 
-      // 3. Fetch Charging Stations near midpoint
-      const center = {
-        lat: (originCoord.lat + destCoord.lat) / 2,
-        lng: (originCoord.lng + destCoord.lng) / 2,
-      };
+      // 3. Sample coordinates along the driving corridor
+      // Dynamic sampling interval based on total route distance (minimum 12 miles, max 40 miles)
+      const intervalMiles = Math.max(12, Math.min(40, route.distanceMiles / 12));
+      const intervalMeters = intervalMiles * 1609.34;
+      const samples = sampleRoute(route.coordinates, intervalMeters);
+      
+      console.log(`[Telemetry] Routing distance: ${route.distanceMiles} mi. Sampled into ${samples.length} points along driving corridor.`);
 
-      // Request 20 stations to filter corridor outliers
-      const stations = await getChargingStations(center, 20, originCoord, destCoord);
+      // 4. Fetch Charging Stations in batches of 5 to avoid OCM rate-limiting.
+      //    Firing all 70+ requests simultaneously on long routes causes the OCM
+      //    free-tier to silently drop most requests, returning zero results.
+      const searchRadiusMiles = Math.max(15, intervalMiles * 1.25);
+      const BATCH_SIZE = 5;
+      const aggregatedStations: ApiChargingStation[] = [];
 
-      // Filter out stations outside 3km (3000m) corridor of direct route
-      const corridorStations = stations.filter((st) => {
-        const minD = getMinDistanceToRoute(st, route.coordinates);
-        return minD <= 3000; // 3 km limit
+      for (let i = 0; i < samples.length; i += BATCH_SIZE) {
+        const batch = samples.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map((sample) =>
+            getChargingStations(sample, searchRadiusMiles).catch((err) => {
+              console.warn(`[OCM Batch] Error at (${sample.lat.toFixed(4)}, ${sample.lng.toFixed(4)}):`, err);
+              return [] as ApiChargingStation[];
+            })
+          )
+        );
+        aggregatedStations.push(...batchResults.flat());
+        console.log(`[OCM Batch] Completed ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(samples.length / BATCH_SIZE)} — ${aggregatedStations.length} stations collected`);
+        // 300 ms pause between batches to stay within OCM free-tier rate limits
+        if (i + BATCH_SIZE < samples.length) {
+          await new Promise((res) => setTimeout(res, 300));
+        }
+      }
+
+
+      // 5. Deduplicate aggregated results
+      // Pass 1: exact ID deduplication
+      const idMap = new Map<string, ApiChargingStation>();
+      aggregatedStations.forEach((st) => {
+        if (!idMap.has(st.id)) {
+          idMap.set(st.id, st);
+        }
       });
+      const uniqueById = Array.from(idMap.values());
 
-      if (corridorStations.length === 0) {
+      // Pass 2: coordinate deduplication (merging chargers within 15 meters)
+      const deduplicated = deduplicateStations(uniqueById);
+
+      if (deduplicated.length === 0) {
         throw new Error(
-          `Found ${stations.length} charging stations in area, but all were outside the 3km route corridor.`
+          `Zero charging stations identified along the driving corridor from ${originInput} to ${destInput}.`
         );
       }
 
-      // Fetch OSRM nearest snapped road distance for each station in parallel
+      // 6. Fetch OSRM nearest snapped road distance for top 30 stations in parallel
+      // (capping snaps prevents OSRM public rate-limiting / slow page loads)
       const roadDistancesMap: Record<string, number> = {};
+      const topStationsToSnap = deduplicated.slice(0, 30);
       await Promise.all(
-        corridorStations.map(async (st) => {
-          const dist = await getDistanceToNearestRoad(st.lat, st.lng);
-          roadDistancesMap[st.id] = dist;
+        topStationsToSnap.map(async (st) => {
+          try {
+            const dist = await getDistanceToNearestRoad(st.lat, st.lng);
+            roadDistancesMap[st.id] = dist;
+          } catch (e) {
+            console.warn(`Failed OSRM snap for station ${st.id}`, e);
+          }
         })
       );
       setStationRoadDistances(roadDistancesMap);
 
-      setRawStations(deduplicateStations(corridorStations));
+      setRawStations(deduplicated);
       setSelectedStationId(null);
       setReservationStatus("NONE");
     } catch (err: any) {
@@ -382,7 +479,6 @@ export default function DemoPage() {
       if (geoOrigin && geoDest) {
         setOriginCoord(geoOrigin);
         setDestCoord(geoDest);
-        setSelectedPresetId(""); // Clear preset since they typed custom location
       } else {
         alert("Geocoding failed for one or both locations. Using previous coordinates.");
       }
@@ -472,17 +568,69 @@ export default function DemoPage() {
     trafficWaitAdder,
   ]);
 
-  // Find the recommended charger node (highest composite score)
+  // ─── Ranking layer: top-10 recommended chargers ─────────────────────────────
+  const rankingResults = useMemo((): RankingResult[] => {
+    if (stationsWithDerived.length === 0) return [];
+    return rankStations(
+      stationsWithDerived.map((st) => ({
+        id: st.id,
+        reliabilityScore: st.reliabilityScore,
+        powerKw: st.powerKw,
+        vehicleMaxKw: currentVehicle.maxChargingSpeedKw,
+        portsAvailable: st.portsAvailable,
+        portsTotal: st.portsTotal,
+        predictedQueueMinutes: st.predictedQueueMinutes,
+        distanceMiles: st.distanceMiles,
+        connectorType: st.connectorType,
+        vehicleConnector: currentVehicle.connectorType,
+        pricePerKwh: st.pricePerKwh,
+      }))
+    );
+  }, [stationsWithDerived, currentVehicle]);
+
+  // Map of station id → rank (for TripMap highlighted markers)
+  const recommendedRankMap = useMemo((): Record<string, number> => {
+    const map: Record<string, number> = {};
+    rankingResults.forEach((r) => { map[r.id] = r.rank; });
+    return map;
+  }, [rankingResults]);
+
+  // Top-10 stations merged with ranking metadata (for suggestion cards)
+  const recommendedChargers = useMemo(() => {
+    return rankingResults.map((r) => {
+      const station = stationsWithDerived.find((s) => s.id === r.id)!;
+      return { ...station, rank: r.rank, selectionReason: r.selectionReason, compositeScore: r.compositeScore };
+    }).filter(Boolean);
+  }, [rankingResults, stationsWithDerived]);
+
+  // Find the #1 recommended charger node (highest composite score)
   const recommendedStation = useMemo(() => {
-    if (stationsWithDerived.length === 0) return null;
-    return [...stationsWithDerived].sort((a, b) => b.aiScore - a.aiScore)[0];
-  }, [stationsWithDerived]);
+    if (recommendedChargers.length === 0) return null;
+    return recommendedChargers[0]; // already sorted by rank
+  }, [recommendedChargers]);
 
   // Get active selected charger (or recommended by default)
   const activeStation = useMemo(() => {
     if (stationsWithDerived.length === 0) return null;
     return stationsWithDerived.find((s) => s.id === selectedStationId) || recommendedStation;
   }, [stationsWithDerived, selectedStationId, recommendedStation]);
+
+  const mappedStations = useMemo(() => {
+    return stationsWithDerived.map((st) => ({
+      id: st.id,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      isRecommended: st.id in recommendedRankMap,
+      isSelected: !!activeStation && st.id === activeStation.id,
+    }));
+  }, [stationsWithDerived, recommendedRankMap, activeStation]);
+
+  const handleSelectStation = useCallback((id: string) => {
+    if (reservationStatus === "NONE") {
+      setSelectedStationId(id);
+    }
+  }, [reservationStatus]);
 
   // ─── Waypoint Optimized Routing ─────────────────────────────────────────────
   useEffect(() => {
@@ -528,7 +676,6 @@ export default function DemoPage() {
         const s = originSuggestions[activeOriginIndex];
         setOriginInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
         setOriginCoord(s.coord);
-        setSelectedPresetId("");
         setOriginSuggestions([]);
         setShowOriginSuggestions(false);
         setActiveOriginIndex(-1);
@@ -554,7 +701,6 @@ export default function DemoPage() {
         const s = destSuggestions[activeDestIndex];
         setDestInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
         setDestCoord(s.coord);
-        setSelectedPresetId("");
         setDestSuggestions([]);
         setShowDestSuggestions(false);
         setActiveDestIndex(-1);
@@ -630,15 +776,15 @@ export default function DemoPage() {
   }, [activeStation, recommendedStation, currentVehicle, maxPrice]);
 
   // ─── Network Telemetry Dashboard derived values ──────────────────────────────
-  const activeChargers = useMemo(() => {
-    if (trafficSeverity === "gridlock") return 17;
-    if (trafficSeverity === "dense") return 18;
-    return 19;
-  }, [trafficSeverity]);
+  const totalChargers = stationsWithDerived.length;
 
   const offlineChargers = useMemo(() => {
-    return 20 - activeChargers;
-  }, [activeChargers]);
+    return stationsWithDerived.filter((s) => s.reliabilityScore !== undefined && s.reliabilityScore < 83).length;
+  }, [stationsWithDerived]);
+
+  const activeChargers = useMemo(() => {
+    return totalChargers - offlineChargers;
+  }, [totalChargers, offlineChargers]);
 
   const avgQueueMin = useMemo(() => {
     if (stationsWithDerived.length === 0) return 4;
@@ -760,43 +906,50 @@ export default function DemoPage() {
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-6 py-6 grid lg:grid-cols-[300px_1fr_360px] gap-6 items-start">
         {/* ─── LEFT COLUMN: Trip & Fleet Configuration ───────────────────────── */}
         <aside className="space-y-5">
-          {/* Trip Presets & Route Selection */}
+          {/* Corridor Routing & Search */}
           <div className="rounded-2xl bg-zinc-900 border border-white/[0.06] overflow-hidden p-4">
             <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1.5">
-              Corridor Route
+              Corridor Routing & Search
             </p>
-            <p className="text-[11px] text-zinc-600 mb-3">Select fleet logistics target corridor</p>
+            <p className="text-[11px] text-zinc-650 mb-3">Define fleet logistics corridor endpoints</p>
 
             <div className="space-y-2">
-              <select
-                value={selectedPresetId}
-                onChange={(e) => setSelectedPresetId(e.target.value)}
-                className="w-full bg-zinc-950 border border-white/[0.06] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50 cursor-pointer"
-              >
-                {PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-
-              <div className="w-full text-center text-[10px] text-zinc-600 font-mono py-1">
-                OR ENTER GPS NODES
-              </div>
-
               {/* Custom Search Form */}
-              <form onSubmit={handleAddressSearch} className="space-y-2.5">
+              <form onSubmit={handleAddressSearch} className="space-y-3">
                 <div className="relative">
                   <div className="flex justify-between items-center">
                     <label
                       htmlFor="origin"
-                      className="text-[9px] font-mono text-zinc-500 uppercase"
+                      className="text-[9px] font-mono text-zinc-500 uppercase flex items-center gap-1"
                     >
                       Origin Address
                     </label>
-                    {loadingOriginSuggestions && (
-                      <span className="w-2.5 h-2.5 border border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {loadingOriginSuggestions && (
+                        <span className="w-2.5 h-2.5 border border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        disabled={isLocating}
+                        className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 disabled:text-zinc-650 disabled:bg-zinc-950/20 transition-colors flex items-center gap-1 bg-cyan-500/5 hover:bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/15"
+                        title="Use Current Location"
+                      >
+                        {isLocating ? (
+                          <span className="w-2 h-2 border border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></span>
+                        ) : (
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" />
+                            <line x1="12" y1="2" x2="12" y2="4" />
+                            <line x1="12" y1="20" x2="12" y2="22" />
+                            <line x1="2" y1="12" x2="4" y2="12" />
+                            <line x1="20" y1="12" x2="22" y2="12" />
+                          </svg>
+                        )}
+                        GPS
+                      </button>
+                    </div>
                   </div>
                   <input
                     id="origin"
@@ -828,7 +981,7 @@ export default function DemoPage() {
                         id="origin-suggestions-list"
                         role="listbox"
                         aria-label="Origin address suggestions"
-                        className="absolute z-30 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
+                        className="absolute z-35 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
                       >
                         {originSuggestions.length > 0 ? (
                           originSuggestions.map((s, idx) => (
@@ -838,9 +991,9 @@ export default function DemoPage() {
                               role="option"
                               aria-selected={activeOriginIndex === idx}
                               onClick={() => {
-                                setOriginInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
+                                setIsOriginSelected(true);
+                                setOriginInput(s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim());
                                 setOriginCoord(s.coord);
-                                setSelectedPresetId("");
                                 setOriginSuggestions([]);
                                 setShowOriginSuggestions(false);
                               }}
@@ -860,6 +1013,23 @@ export default function DemoPage() {
                         )}
                       </div>
                     )}
+                </div>
+
+                {/* Swap Button container */}
+                <div className="flex justify-center -my-1 relative z-10">
+                  <button
+                    type="button"
+                    onClick={handleSwap}
+                    className="w-7 h-7 bg-zinc-950 border border-white/[0.08] hover:border-cyan-400/50 hover:text-cyan-400 text-zinc-400 rounded-full flex items-center justify-center transition-all duration-200 shadow-md active:scale-95"
+                    title="Swap Origin and Destination"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="17 1 21 5 17 9" />
+                      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                      <polyline points="7 23 3 19 7 15" />
+                      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                    </svg>
+                  </button>
                 </div>
 
                 <div className="relative">
@@ -904,7 +1074,7 @@ export default function DemoPage() {
                         id="dest-suggestions-list"
                         role="listbox"
                         aria-label="Destination address suggestions"
-                        className="absolute z-30 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
+                        className="absolute z-35 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
                       >
                         {destSuggestions.length > 0 ? (
                           destSuggestions.map((s, idx) => (
@@ -914,9 +1084,9 @@ export default function DemoPage() {
                               role="option"
                               aria-selected={activeDestIndex === idx}
                               onClick={() => {
-                                setDestInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
+                                setIsDestSelected(true);
+                                setDestInput(s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim());
                                 setDestCoord(s.coord);
-                                setSelectedPresetId("");
                                 setDestSuggestions([]);
                                 setShowDestSuggestions(false);
                               }}
@@ -941,6 +1111,40 @@ export default function DemoPage() {
                 <div className="w-full flex justify-between items-center text-[10px] text-cyan-400 font-mono border border-cyan-500/10 bg-cyan-500/5 px-3 py-2 rounded-xl">
                   <span>● TELEMETRY LINK ONLINE</span>
                   <span className="text-zinc-500">AUTO-ROUTING ACTIVE</span>
+                </div>
+
+                {/* Plan and Refresh Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={searchingGeocodes || loading}
+                    className="py-2.5 rounded-xl bg-cyan-400 disabled:opacity-50 text-zinc-950 text-xs font-bold hover:bg-cyan-300 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {searchingGeocodes ? (
+                      <span className="w-3.5 h-3.5 border-2 border-zinc-950/20 border-t-zinc-950 rounded-full animate-spin"></span>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                    )}
+                    Plan Route
+                  </button>
+                  <button
+                    type="button"
+                    onClick={triggerJourneyPlan}
+                    disabled={loading}
+                    className="py-2.5 rounded-xl bg-zinc-800 disabled:opacity-50 text-zinc-200 border border-white/[0.04] text-xs font-semibold hover:bg-zinc-700 hover:text-white active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {loading ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                      </svg>
+                    )}
+                    Refresh
+                  </button>
                 </div>
               </form>
             </div>
@@ -1055,12 +1259,14 @@ export default function DemoPage() {
             avgQueueMin={avgQueueMin}
             networkUtilPct={networkUtilPct}
             predictedDemandPct={predictedDemandPct}
+            totalChargers={totalChargers}
           />
         </aside>
 
         {/* ─── CENTER COLUMN: Interactive Map & Stations ─────────────────────── */}
         <section className="space-y-6 flex flex-col">
           {/* Real Interactive Map Component */}
+          {/* Center Column / Map */}
           <div className="relative h-[460px] lg:h-[560px] xl:h-[660px] transition-all duration-300">
             {apiError && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-950/95 backdrop-blur-sm p-6 border border-red-500/20 rounded-2xl">
@@ -1085,21 +1291,11 @@ export default function DemoPage() {
             <TripMap
               origin={originCoord}
               destination={destCoord}
-              stations={stationsWithDerived.map((st) => ({
-                id: st.id,
-                name: st.name,
-                lat: st.lat,
-                lng: st.lng,
-                isRecommended: !!recommendedStation && st.id === recommendedStation.id,
-                isSelected: !!activeStation && st.id === activeStation.id,
-              }))}
+              stations={mappedStations}
               routeCoordinates={optimizedRouteData?.coordinates || []}
               selectedStationId={activeStation?.id || null}
-              onSelectStation={(id) => {
-                if (reservationStatus === "NONE") {
-                  setSelectedStationId(id);
-                }
-              }}
+              recommendedRankMap={recommendedRankMap}
+              onSelectStation={handleSelectStation}
             />
           </div>
 
@@ -1179,20 +1375,26 @@ export default function DemoPage() {
             </div>
           )}
 
-          {/* Candidate Charging Stations Compare Cards */}
+          {/* Top-10 AI Recommended Charging Stations */}
           <div>
             <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                  CANDIDATE CHARGING NODES ({stationsWithDerived.length})
+                  AI RECOMMENDED NODES
                 </span>
+                {/* Badge showing top-10 of total */}
+                {stationsWithDerived.length > 0 && (
+                  <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                    TOP {recommendedChargers.length} / {stationsWithDerived.length} CHARGERS
+                  </span>
+                )}
                 {!debugMode && (
                   <button
                     type="button"
                     onClick={() => setDebugMode(true)}
-                    className="text-[9px] font-mono text-zinc-550 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/25 px-1.5 py-0.5 rounded transition-all ml-2.5 bg-white/[0.02]"
+                    className="text-[9px] font-mono text-zinc-550 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/25 px-1.5 py-0.5 rounded transition-all bg-white/[0.02]"
                   >
-                    [SHOW TELEMETRY DEBUG]
+                    [DEBUG]
                   </button>
                 )}
               </div>
@@ -1221,7 +1423,7 @@ export default function DemoPage() {
                   </div>
                 ))}
               </div>
-            ) : stationsWithDerived.length === 0 ? (
+            ) : recommendedChargers.length === 0 ? (
               <div className="p-8 text-center bg-zinc-900 border border-white/[0.06] rounded-2xl">
                 <p className="text-sm text-zinc-500">
                   No charging stations identified within route search area.
@@ -1229,40 +1431,40 @@ export default function DemoPage() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-3 gap-3">
-                {stationsWithDerived
-                  .sort((a, b) => b.aiScore - a.aiScore)
-                  .map((st) => (
-                    <StationCard
-                      key={st.id}
-                      id={st.id}
-                      name={st.name}
-                      network={st.operator}
-                      powerKw={st.powerKw}
-                      connectorType={st.connectorType}
-                      portsAvailable={st.portsAvailable}
-                      portsTotal={st.portsTotal}
-                      pricePerKwh={st.pricePerKwh}
-                      currentQueueMinutes={st.currentQueueMinutes}
-                      predictedQueueMinutes={st.predictedQueueMinutes}
-                      reliabilityScore={st.reliabilityScore}
-                      arrivalSoc={st.arrivalSoc}
-                      chargingTimeMinutes={st.chargingTimeMinutes}
-                      distanceMiles={st.distanceMiles}
-                      durationMinutes={st.durationMinutes}
-                      isRecommended={!!recommendedStation && st.id === recommendedStation.id}
-                      isSelected={!!activeStation && st.id === activeStation.id}
-                      onSelect={() => {
-                        if (reservationStatus === "NONE") {
-                          setSelectedStationId(st.id);
-                        }
-                      }}
-                      onReserve={() => {
+                {recommendedChargers.map((st) => (
+                  <StationCard
+                    key={st.id}
+                    id={st.id}
+                    name={st.name}
+                    network={st.operator}
+                    powerKw={st.powerKw}
+                    connectorType={st.connectorType}
+                    portsAvailable={st.portsAvailable}
+                    portsTotal={st.portsTotal}
+                    pricePerKwh={st.pricePerKwh}
+                    currentQueueMinutes={st.currentQueueMinutes}
+                    predictedQueueMinutes={st.predictedQueueMinutes}
+                    reliabilityScore={st.reliabilityScore}
+                    arrivalSoc={st.arrivalSoc}
+                    chargingTimeMinutes={st.chargingTimeMinutes}
+                    distanceMiles={st.distanceMiles}
+                    durationMinutes={st.durationMinutes}
+                    isRecommended={st.rank === 1}
+                    isSelected={!!activeStation && st.id === activeStation.id}
+                    rank={st.rank}
+                    selectionReason={st.selectionReason}
+                    onSelect={() => {
+                      if (reservationStatus === "NONE") {
                         setSelectedStationId(st.id);
-                        setReservationStatus("CONFIRMED");
-                      }}
-                      reservationActive={reservationStatus !== "NONE"}
-                    />
-                  ))}
+                      }
+                    }}
+                    onReserve={() => {
+                      setSelectedStationId(st.id);
+                      setReservationStatus("CONFIRMED");
+                    }}
+                    reservationActive={reservationStatus !== "NONE"}
+                  />
+                ))}
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ interface EnterpriseInsightsProps {
   avgQueueMin: number;
   networkUtilPct: number;
   predictedDemandPct: number;
+  totalChargers: number;
 }
 
 interface StatRowProps {
@@ -19,7 +20,7 @@ interface StatRowProps {
 function StatRow({ label, value, unit, accent, barValue }: StatRowProps) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0">
-      <span className="text-[11px] text-zinc-500 font-medium">{label}</span>
+      <span className="text-[11px] text-zinc-555 font-medium">{label}</span>
       <div className="flex items-center gap-3">
         {barValue !== undefined && (
           <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
@@ -46,6 +47,7 @@ export default function EnterpriseInsights({
   avgQueueMin,
   networkUtilPct,
   predictedDemandPct,
+  totalChargers,
 }: EnterpriseInsightsProps) {
   // Calculate a mock operator health index
   const healthIndex = Math.max(70, Math.round(100 - offlineChargers * 5 - avgQueueMin * 0.8));
@@ -58,7 +60,7 @@ export default function EnterpriseInsights({
       <p className="text-[11px] text-zinc-600 mb-4">Enterprise grid infrastructure metrics</p>
 
       <div className="space-y-1">
-        <StatRow label="Active Chargers" value={activeChargers} unit="/ 20" />
+        <StatRow label="Active Chargers" value={activeChargers} unit={`/ ${totalChargers}`} />
         <StatRow label="Offline Stations" value={offlineChargers} accent={offlineChargers > 1} />
         <StatRow
           label="Corridor Avg Wait"

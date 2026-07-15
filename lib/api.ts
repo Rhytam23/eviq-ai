@@ -125,64 +125,60 @@ export async function getWeather(lat: number, lng: number): Promise<WeatherData>
   };
 }
 
-// Open Charge Map API with Fallback
-// Open Charge Map API
+// Open Charge Map — via server-side proxy at /api/chargers
+// Calling our own Next.js server instead of OCM directly prevents Chrome
+// extensions (which wrap window.fetch) from throwing "TypeError: Failed to fetch".
 export async function getChargingStations(
   center: Coordinate,
-  limit: number = 5,
-  origin?: Coordinate,
-  destination?: Coordinate
+  radiusMiles: number = 15,
+  limit: number = 250 // kept for interface compatibility
 ): Promise<ApiChargingStation[]> {
-  const ocmKey = process.env.NEXT_PUBLIC_OCM_API_KEY;
-  if (!ocmKey) {
-    throw new Error("Missing NEXT_PUBLIC_OCM_API_KEY environment variable. OCM queries disabled.");
-  }
-  const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${center.lat}&longitude=${center.lng}&distance=50&maxresults=${limit}&compact=false&verbose=false`;
+  const allStations: ApiChargingStation[] = [];
+  const fetchedIds = new Set<string>();
+  let greaterThanId = 0;
+  let hasMore = true;
+  let page = 0;
+  const pageSize = 100;
+  const maxPages = 5;
 
-  console.log(`[OCM] Fetching charging stations. Lat: ${center.lat}, Lng: ${center.lng}, Url: ${url}`);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "X-API-Key": ocmKey,
-        "User-Agent": "EviqAiDemoEnterpriseApplication/1.0",
-      },
+  while (hasMore && page < maxPages) {
+    const params = new URLSearchParams({
+      lat: String(center.lat),
+      lng: String(center.lng),
+      radius: String(radiusMiles),
+      pageSize: String(pageSize),
+      greaterThanId: String(greaterThanId),
     });
-    clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      const errorMsg = `Open Charge Map API returned HTTP error ${res.status}: ${res.statusText}`;
-      console.error(`[OCM] Error: ${errorMsg}`);
-      throw new Error(errorMsg);
+    const proxyUrl = `/api/chargers?${params.toString()}`;
+    console.log(`[OCM Proxy] Page ${page + 1} — ${proxyUrl}`);
+
+    let data: any[];
+    try {
+      const res = await fetch(proxyUrl, {
+        // Calling our own origin — no extension interference, no CORS issue
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        console.warn(`[OCM Proxy] HTTP ${res.status} on page ${page + 1}. Breaking.`);
+        break;
+      }
+      const json = await res.json();
+      data = Array.isArray(json) ? json : [];
+    } catch (err: any) {
+      console.warn(`[OCM Proxy] Fetch failed on page ${page + 1}:`, err?.message ?? err);
+      break;
     }
-
-    const data = await res.json();
-    console.log("[OCM] Raw API Response Data:", data);
-
-    if (!Array.isArray(data)) {
-      throw new Error("Open Charge Map API returned invalid non-array JSON data");
-    }
-
-    // Log details for every returned station as requested by Phase 1
-    data.forEach((item: any, idx: number) => {
-      console.log(`[OCM POI #${idx + 1}] ID: ${item.ID}, Title: ${item.AddressInfo?.Title}, Address: ${item.AddressInfo?.AddressLine1}, Operator: ${item.OperatorInfo?.Title || "Unknown"}, Lat: ${item.AddressInfo?.Latitude}, Lng: ${item.AddressInfo?.Longitude}`);
-    });
 
     if (data.length === 0) {
-      throw new Error(
-        `Zero charging stations returned by OCM within 50 miles of coordinate ${center.lat}, ${center.lng}`
-      );
+      hasMore = false;
+      break;
     }
 
-    return data.map((item: any, index: number) => {
+    const mappedRaw = data.map((item: any, index: number) => {
       const power = item.Connections?.[0]?.PowerKW ?? 0;
       const connType = item.Connections?.[0]?.ConnectionType?.Title ?? "Unknown";
 
-      // Calculate dynamic price based on the ID hash so it is stable and repeatable
       const stationIdNum = parseInt(item.ID) || index;
       const price = 0.28 + (stationIdNum % 5) * 0.04;
 
@@ -193,13 +189,13 @@ export async function getChargingStations(
       const lng = parseFloat(item.AddressInfo?.Longitude);
 
       if (isNaN(lat) || isNaN(lng)) {
-        throw new Error(`OCM station ${item.ID} has invalid lat/lng coordinates`);
+        console.warn(`OCM station ${item.ID} has invalid lat/lng coordinates`);
+        return null;
       }
 
-      // Deterministic ports calculation based on station ID (no Math.random)
       const portsCount = item.Connections?.length ?? 4;
       const portsAvailable = Math.max(1, (stationIdNum % portsCount) + 1);
-      const reliabilityScore = 80 + (stationIdNum % 21); // stable 80-100 score
+      const reliabilityScore = 80 + (stationIdNum % 21);
 
       return {
         id: String(item.ID ?? index),
@@ -220,12 +216,67 @@ export async function getChargingStations(
         reliabilityScore,
       };
     });
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    console.error("[OCM] Fetch failed:", err);
-    throw new Error(err.message || "Failed to contact Open Charge Map API");
+
+    const mapped = mappedRaw.filter((x) => x !== null) as ApiChargingStation[];
+
+    let addedNew = false;
+    let maxId = greaterThanId;
+
+    mapped.forEach((st) => {
+      const idNum = parseInt(st.id) || 0;
+      if (idNum > maxId) maxId = idNum;
+      if (!fetchedIds.has(st.id)) {
+        fetchedIds.add(st.id);
+        allStations.push(st);
+        addedNew = true;
+      }
+    });
+
+    if (!addedNew || maxId <= greaterThanId) {
+      hasMore = false;
+      break;
+    }
+
+    greaterThanId = maxId;
+    page++;
+
+    if (data.length < pageSize) {
+      hasMore = false;
+    }
   }
+
+  // Always returns an array — empty if all pages failed.
+  // page.tsx is responsible for showing the user-facing "no stations" error.
+  return allStations;
 }
+
+
+// Nominatim Reverse Geocoding API
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "EviqAiDemoEnterpriseApplication/1.0",
+      },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.display_name) {
+        const parts = data.display_name.split(",");
+        if (parts.length > 2) {
+          // Join the first two components for a clean address (e.g., street, city)
+          return parts[0].trim() + ", " + parts[1].trim();
+        }
+        return data.display_name;
+      }
+    }
+  } catch (err) {
+    console.error("Reverse geocoding API error:", err);
+  }
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
 
 // OSRM snap road distance helper for verification
 export async function getDistanceToNearestRoad(lat: number, lng: number): Promise<number> {
