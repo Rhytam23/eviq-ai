@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type ReservationStatus = "NONE" | "SEARCHING" | "CONFIRMED" | "ACTIVE" | "COMPLETED";
@@ -17,7 +17,7 @@ interface ReservationPanelProps {
   onStatusChange: (status: ReservationStatus) => void;
 }
 
-export default function ReservationPanel({
+function ReservationPanel({
   status,
   stationName,
   portNumber,
@@ -434,3 +434,5 @@ export default function ReservationPanel({
     </div>
   );
 }
+
+export default React.memo(ReservationPanel);

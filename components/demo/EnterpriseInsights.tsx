@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 
 interface EnterpriseInsightsProps {
   activeChargers: number;
@@ -41,7 +42,7 @@ function StatRow({ label, value, unit, accent, barValue }: StatRowProps) {
   );
 }
 
-export default function EnterpriseInsights({
+function EnterpriseInsights({
   activeChargers,
   offlineChargers,
   avgQueueMin,
@@ -115,3 +116,5 @@ export default function EnterpriseInsights({
     </div>
   );
 }
+
+export default React.memo(EnterpriseInsights);

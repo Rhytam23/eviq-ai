@@ -18,31 +18,31 @@ const config: Config = {
       },
       colors: {
         navy: {
-          DEFAULT: "#05070B",
-          deep: "#020408",
+          DEFAULT: "#050B14",
+          deep: "#02050A",
         },
         orange: {
-          DEFAULT: "#FF7A00",
-          secondary: "#FFA640",
-          glow: "rgba(255, 122, 0, 0.14)",
+          DEFAULT: "#00E5FF", // mapped to Electric Cyan for global accent replacement
+          secondary: "#00B2CC",
+          glow: "rgba(0, 229, 255, 0.14)",
         },
         shell: {
-          50: "#0A1018",
-          100: "#101820",
-          150: "#15202c",
-          200: "#1d2c3f",
+          50: "#0B1624", // secondary surfaces
+          100: "#101D2E", // card backgrounds
+          150: "#14253B",
+          200: "#1C324E",
         },
         ink: {
           900: "#FFFFFF",
-          700: "#E2E8F0",
-          500: "#A0AEC0",
-          350: "#718096",
+          700: "#94A3B8", // updated grey secondary text
+          500: "#94A3B8",
+          350: "#64748B",
         },
       },
       boxShadow: {
         soft: "0 8px 40px rgba(0,0,0,0.55)",
         lift: "0 24px 60px rgba(0,0,0,0.75)",
-        glow: "0 0 40px rgba(255,122,0,0.18)",
+        glow: "0 0 40px rgba(0,229,255,0.18)",
       },
       animation: {
         "pulse-slow": "pulse 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",

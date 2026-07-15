@@ -568,25 +568,46 @@ export default function DemoPage() {
     trafficWaitAdder,
   ]);
 
-  // ─── Ranking layer: top-10 recommended chargers ─────────────────────────────
-  const rankingResults = useMemo((): RankingResult[] => {
-    if (stationsWithDerived.length === 0) return [];
-    return rankStations(
-      stationsWithDerived.map((st) => ({
+  // Decoupled base inputs for the ranking engine (recalculates ONLY on route, vehicle, or battery changes)
+  const rankingBaseInputs = useMemo(() => {
+    if (!directRouteData) return [];
+    return rawStations.map((st, index) => {
+      const meters = getDistanceLatLng(originCoord.lat, originCoord.lng, st.lat, st.lng);
+      const distanceToStation = Math.min(
+        directRouteData.distanceMiles,
+        Math.max(1, (meters / 1609.34) * 1.12)
+      );
+
+      const kwhUsed = distanceToStation * (currentVehicle.averageConsumptionWhPerMile / 1000);
+      const arrivalSoc = Math.max(
+        2,
+        Math.round(batterySoc - (kwhUsed / currentVehicle.capacityKwh) * 100)
+      );
+
+      const liveQueue = Math.max(0, st.portsAvailable === 0 ? 15 + index * 5 : 0);
+      const rScore = st.reliabilityScore ?? 90 - index * 5;
+
+      return {
         id: st.id,
-        reliabilityScore: st.reliabilityScore,
+        reliabilityScore: rScore,
         powerKw: st.powerKw,
         vehicleMaxKw: currentVehicle.maxChargingSpeedKw,
         portsAvailable: st.portsAvailable,
         portsTotal: st.portsTotal,
-        predictedQueueMinutes: st.predictedQueueMinutes,
-        distanceMiles: st.distanceMiles,
+        predictedQueueMinutes: liveQueue,
+        distanceMiles: distanceToStation,
         connectorType: st.connectorType,
         vehicleConnector: currentVehicle.connectorType,
         pricePerKwh: st.pricePerKwh,
-      }))
-    );
-  }, [stationsWithDerived, currentVehicle]);
+      };
+    });
+  }, [rawStations, directRouteData, originCoord, currentVehicle, batterySoc]);
+
+  // ─── Ranking layer: top-10 recommended chargers ─────────────────────────────
+  const rankingResults = useMemo((): RankingResult[] => {
+    if (rankingBaseInputs.length === 0) return [];
+    return rankStations(rankingBaseInputs);
+  }, [rankingBaseInputs]);
 
   // Map of station id → rank (for TripMap highlighted markers)
   const recommendedRankMap = useMemo((): Record<string, number> => {
@@ -616,15 +637,22 @@ export default function DemoPage() {
   }, [stationsWithDerived, selectedStationId, recommendedStation]);
 
   const mappedStations = useMemo(() => {
-    return stationsWithDerived.map((st) => ({
-      id: st.id,
-      name: st.name,
-      lat: st.lat,
-      lng: st.lng,
-      isRecommended: st.id in recommendedRankMap,
-      isSelected: !!activeStation && st.id === activeStation.id,
-    }));
-  }, [stationsWithDerived, recommendedRankMap, activeStation]);
+    return stationsWithDerived.map((st) => {
+      const rec = recommendedChargers.find(x => x.id === st.id);
+      return {
+        id: st.id,
+        name: st.name,
+        lat: st.lat,
+        lng: st.lng,
+        isRecommended: st.id in recommendedRankMap,
+        isSelected: !!activeStation && st.id === activeStation.id,
+        powerKw: st.powerKw,
+        reliabilityScore: st.reliabilityScore,
+        predictedQueueMinutes: st.predictedQueueMinutes,
+        selectionReason: rec?.selectionReason,
+      };
+    });
+  }, [stationsWithDerived, recommendedRankMap, activeStation, recommendedChargers]);
 
   const handleSelectStation = useCallback((id: string) => {
     if (reservationStatus === "NONE") {
@@ -807,9 +835,9 @@ export default function DemoPage() {
   }, [trafficSeverity]);
 
   return (
-    <div className="min-h-screen bg-[#05070B] text-white font-sans flex flex-col noise relative">
+    <div className="min-h-screen bg-[#050B14] text-white font-sans flex flex-col noise relative">
       {/* ─── Top Enterprise Navbar ───────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-[#05070B]/90 backdrop-blur-md border-b border-white/[0.06] select-none">
+      <header className="sticky top-0 z-30 bg-[#050B14]/90 backdrop-blur-md border-b border-white/[0.06] select-none">
         <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <a

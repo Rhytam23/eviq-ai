@@ -11,6 +11,10 @@ interface Station {
   lng: number;
   isRecommended: boolean;
   isSelected: boolean;
+  powerKw?: number;
+  reliabilityScore?: number;
+  predictedQueueMinutes?: number;
+  selectionReason?: string;
 }
 
 interface TripMapProps {
@@ -39,6 +43,8 @@ export default function TripMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef          = useRef<maplibregl.Map | null>(null);
 
+  // Single hover popup reference to prevent duplicates
+  const hoverPopupRef        = useRef<maplibregl.Popup | null>(null);
   // Only vehicle + destination + top-10 recommendation DOM markers
   const specialMarkersRef    = useRef<maplibregl.Marker[]>([]);
   // Map station string-id → GeoJSON numeric feature-id (for setFeatureState)
@@ -52,6 +58,15 @@ export default function TripMap({
 
   // Keep the callback ref in sync without it being a useEffect dep
   useEffect(() => { onSelectRef.current = onSelectStation; }, [onSelectStation]);
+
+  // Clean up any active popup on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverPopupRef.current) {
+        hoverPopupRef.current.remove();
+      }
+    };
+  }, []);
 
   // ── 1. Initialize Map ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -115,12 +130,6 @@ export default function TripMap({
   }, [mapLoaded, routeCoordinates, origin, destination, stations]);
 
   // ── 3. GPU-rendered circle layer for ALL normal (non-top-10) stations ──────
-  //
-  // KEY OPTIMIZATION: instead of one HTMLElement per station (200+ DOM nodes),
-  // this creates a single WebGL draw call via MapLibre's circle layer.
-  // Handles 10 000+ points with no lag. Runs only when the station set changes,
-  // never on mere selection changes.
-  //
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -132,27 +141,21 @@ export default function TripMap({
       type: "FeatureCollection",
       features: normalStations.map(st => ({
         type: "Feature",
-        // 'sid' = string station id stored as a property (not the numeric GeoJSON id)
         properties: { sid: st.id, name: st.name },
         geometry: { type: "Point", coordinates: [st.lng, st.lat] },
       })),
     };
 
-    // Build station-id → numeric feature-id map.
-    // With generateId:true, MapLibre assigns 0, 1, 2 … in array order.
     const idMap = new Map<string, number>();
     normalStations.forEach((st, i) => idMap.set(st.id, i));
     normalFeatureIdsRef.current = idMap;
 
     if (map.getSource(NORMAL_SOURCE)) {
-      // Source already exists — just swap the data. No layer rebuild.
       (map.getSource(NORMAL_SOURCE) as maplibregl.GeoJSONSource).setData(featureCollection);
 
-      // Re-apply selected state after data refresh (feature IDs are re-assigned on setData)
       if (selectedStationId) {
         const fid = idMap.get(selectedStationId);
         if (fid !== undefined) {
-          // Small timeout ensures MapLibre has indexed the new data before setFeatureState
           setTimeout(() => {
             try {
               map.setFeatureState({ source: NORMAL_SOURCE, id: fid }, { selected: true });
@@ -162,11 +165,10 @@ export default function TripMap({
         }
       }
     } else {
-      // First time: create source, layer, and event handlers
       map.addSource(NORMAL_SOURCE, {
         type: "geojson",
         data: featureCollection,
-        generateId: true, // auto-assign numeric ids for setFeatureState
+        generateId: true,
       });
 
       map.addLayer({
@@ -174,28 +176,24 @@ export default function TripMap({
         type: "circle",
         source: NORMAL_SOURCE,
         paint: {
-          // Radius: 7 when selected, 4 otherwise
           "circle-radius": [
             "case", ["boolean", ["feature-state", "selected"], false], 7, 4,
           ],
-          // Color: cyan when selected, subtle white otherwise
           "circle-color": [
             "case", ["boolean", ["feature-state", "selected"], false],
-            "#00F0FF", "rgba(255,255,255,0.18)",
+            "#00E5FF", "rgba(255,255,255,0.18)",
           ],
-          // Stroke
           "circle-stroke-width": [
             "case", ["boolean", ["feature-state", "selected"], false], 1.5, 0.5,
           ],
           "circle-stroke-color": [
             "case", ["boolean", ["feature-state", "selected"], false],
-            "#00F0FF", "rgba(255,255,255,0.07)",
+            "#00E5FF", "rgba(255,255,255,0.07)",
           ],
           "circle-opacity": 0.9,
         },
       });
 
-      // Single click handler for all circle points — uses ref for fresh callback
       map.on("click", NORMAL_LAYER, (e) => {
         const sid = e.features?.[0]?.properties?.sid;
         if (sid) onSelectRef.current(sid as string);
@@ -203,17 +201,10 @@ export default function TripMap({
       map.on("mouseenter", NORMAL_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", NORMAL_LAYER, () => { map.getCanvas().style.cursor = ""; });
     }
-  // Note: selectedStationId intentionally excluded — selection handled in effect #5 below
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapLoaded, stations, recommendedRankMap]);
 
   // ── 4. DOM markers: vehicle + destination + top-10 only ───────────────────
-  //
-  // Only top-10 (≤10 markers) are DOM elements — orders of magnitude fewer
-  // than the old approach of one element per charger (200+).
-  // selectedStationId IS included here so the top-10 marker styling reflects
-  // selection state, but rebuilding 12 elements is trivially cheap.
-  //
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -225,9 +216,9 @@ export default function TripMap({
     const vehicleEl = document.createElement("div");
     vehicleEl.className = "relative w-8 h-8 flex items-center justify-center cursor-pointer";
     vehicleEl.innerHTML = `
-      <div class="absolute inset-0 bg-cyan-400/25 rounded-full animate-ping" style="animation-duration:2s;"></div>
-      <div class="w-4 h-4 bg-[#00F0FF] rounded-full border-2 border-white shadow-[0_0_10px_rgba(0,240,255,0.8)]"></div>
-      <div class="absolute -top-6 text-[9px] font-mono font-bold text-[#00F0FF] bg-zinc-950/80 px-1 py-0.5 rounded border border-cyan-500/30 whitespace-nowrap">VEHICLE</div>
+      <div class="absolute inset-0 bg-[#00E5FF]/25 rounded-full animate-ping" style="animation-duration:2s;"></div>
+      <div class="w-4 h-4 bg-[#00E5FF] rounded-full border-2 border-white shadow-[0_0_10px_rgba(0,229,255,0.8)]"></div>
+      <div class="absolute -top-6 text-[9px] font-mono font-bold text-[#00E5FF] bg-zinc-950/80 px-1 py-0.5 rounded border border-[#00E5FF]/30 whitespace-nowrap">VEHICLE</div>
     `;
     specialMarkersRef.current.push(
       new maplibregl.Marker({ element: vehicleEl }).setLngLat([origin.lng, origin.lat]).addTo(map)
@@ -237,7 +228,7 @@ export default function TripMap({
     const destEl = document.createElement("div");
     destEl.className = "flex flex-col items-center cursor-pointer";
     destEl.innerHTML = `
-      <div class="w-8 h-8 bg-zinc-900 border border-white/20 text-white rounded-lg flex items-center justify-center font-mono font-bold text-xs shadow-xl hover:border-cyan-500 transition-colors">⬡</div>
+      <div class="w-8 h-8 bg-zinc-900 border border-white/20 text-white rounded-lg flex items-center justify-center font-mono font-bold text-xs shadow-xl hover:border-emerald-500 transition-colors">⬡</div>
       <div class="text-[9px] font-mono text-white/50 bg-zinc-950/85 px-1 rounded mt-0.5 whitespace-nowrap">DESTINATION</div>
     `;
     specialMarkersRef.current.push(
@@ -247,7 +238,7 @@ export default function TripMap({
     // Top-10 recommended markers (DOM required for rank badges + rich styling)
     stations.forEach(st => {
       const rank = recommendedRankMap[st.id];
-      if (rank === undefined) return; // Normal stations are in the circle layer
+      if (rank === undefined) return;
 
       const el = document.createElement("div");
       el.className = "flex flex-col items-center cursor-pointer";
@@ -256,36 +247,29 @@ export default function TripMap({
       const isTop3 = rank <= 3;
 
       let outerCls: string;
-      let labelCls: string;
       let innerHtml: string;
 
       if (isSelected) {
         if (rank === 1) {
           outerCls = "border-2 border-emerald-400 bg-emerald-950 text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.7)] w-9 h-9";
-          labelCls = "text-emerald-400 border-emerald-400/50 bg-zinc-950";
         } else {
-          outerCls = "border-2 border-cyan-400 bg-cyan-950 text-cyan-300 shadow-[0_0_16px_rgba(0,240,255,0.7)] w-9 h-9";
-          labelCls = "text-cyan-400 border-cyan-400/50 bg-zinc-950";
+          outerCls = "border-2 border-cyan-400 bg-cyan-950 text-cyan-300 shadow-[0_0_16px_rgba(0,229,255,0.7)] w-9 h-9";
         }
         innerHtml = `<span style="font-size:11px;">⚡</span>`;
       } else if (rank === 1) {
-        // Top recommendation gets green accent
         outerCls = "border-2 border-emerald-400 bg-[#072017] text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.45)] w-9 h-9";
-        labelCls = "text-emerald-300/90 border-emerald-500/30 bg-zinc-950";
         innerHtml = `
           <span style="font-size:11px;">⚡</span>
-          <div style="position:absolute;top:-9px;right:-9px;background:#10B981;color:#05070B;border-radius:9999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;font-family:monospace;border:2px solid #05070B;box-shadow:0 0 8px rgba(16,185,129,0.8);">#${rank}</div>
+          <div style="position:absolute;top:-9px;right:-9px;background:#10B981;color:#050B14;border-radius:9999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;font-family:monospace;border:2px solid #050B14;box-shadow:0 0 8px rgba(16,185,129,0.8);">#${rank}</div>
         `;
       } else if (isTop3) {
-        outerCls = "border-2 border-cyan-400 bg-[#091c1e] text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.45)] w-9 h-9";
-        labelCls = "text-cyan-300/90 border-cyan-500/30 bg-zinc-950";
+        outerCls = "border-2 border-cyan-400 bg-[#091c1e] text-cyan-300 shadow-[0_0_12px_rgba(0,229,255,0.45)] w-9 h-9";
         innerHtml = `
           <span style="font-size:11px;">⚡</span>
-          <div style="position:absolute;top:-9px;right:-9px;background:#00F0FF;color:#05070B;border-radius:9999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;font-family:monospace;border:2px solid #05070B;box-shadow:0 0 8px rgba(0,240,255,0.8);">#${rank}</div>
+          <div style="position:absolute;top:-9px;right:-9px;background:#00E5FF;color:#050B14;border-radius:9999px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;font-family:monospace;border:2px solid #050B14;box-shadow:0 0 8px rgba(0,229,255,0.8);">#${rank}</div>
         `;
       } else {
-        outerCls = "border-2 border-cyan-500/50 bg-zinc-900 text-cyan-400/80 shadow-[0_0_6px_rgba(0,240,255,0.2)] w-8 h-8";
-        labelCls = "text-cyan-400/70 border-cyan-500/15 bg-zinc-950";
+        outerCls = "border-2 border-cyan-500/50 bg-zinc-900 text-cyan-400/80 shadow-[0_0_6px_rgba(0,229,255,0.2)] w-8 h-8";
         innerHtml = `<span style="font-size:9px;font-weight:900;font-family:monospace;line-height:1">#${rank}</span>`;
       }
 
@@ -293,13 +277,61 @@ export default function TripMap({
         <div class="relative rounded-full flex items-center justify-center transition-all duration-200 ${outerCls}">
           ${innerHtml}
         </div>
-        <div class="text-[8px] font-mono px-1 py-0.5 rounded border mt-1 max-w-[90px] truncate text-center ${labelCls}">
-          ${st.name}
-        </div>
       `;
+
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(st.id);
+      });
+
+      // Hover Tooltip: Show popup on enter, hide on leave
+      el.addEventListener("mouseenter", () => {
+        if (hoverPopupRef.current) {
+          hoverPopupRef.current.remove();
+        }
+
+        const waitText = st.predictedQueueMinutes === 0 ? "Immediate access" : `${st.predictedQueueMinutes} min wait`;
+        const reasonText = st.selectionReason || "Best composite routing efficiency score.";
+        const accentColor = rank === 1 ? "#00FF88" : "#00E5FF";
+        const accentBg = rank === 1 ? "bg-emerald-950/70 border-emerald-500/30 text-emerald-400" : "bg-cyan-950/70 border-cyan-500/30 text-cyan-400";
+
+        const popup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 18,
+          className: "premium-tooltip",
+        });
+
+        const tooltipHtml = `
+          <div class="p-3 bg-[#0B1624]/95 backdrop-blur-md border border-white/[0.08] rounded-xl font-sans text-xs min-w-[210px] shadow-2xl text-white select-none pointer-events-none">
+            <div class="flex items-center justify-between mb-1.5 border-b border-white/[0.08] pb-1.5">
+              <span class="font-mono font-bold" style="color: ${accentColor}">#${rank} RECOMMENDATION</span>
+              <span class="font-mono font-bold" style="color: ${accentColor}">${st.reliabilityScore ?? 95}% AI</span>
+            </div>
+            <div class="font-bold text-[12.5px] mb-1 text-white truncate max-w-[190px]">${st.name}</div>
+            <div class="text-zinc-400 font-mono text-[10px] mb-2 flex items-center gap-1.5">
+              <span class="text-white/80">${st.powerKw ?? 250} kW</span>
+              <span class="text-zinc-600">•</span>
+              <span>${waitText}</span>
+            </div>
+            <div class="text-[10.5px] leading-snug p-1.5 rounded border ${accentBg} italic font-medium">
+              ${reasonText}
+            </div>
+          </div>
+        `;
+
+        popup.setLngLat([st.lng, st.lat])
+          .setHTML(tooltipHtml)
+          .addTo(map);
+
+        hoverPopupRef.current = popup;
+      });
+
+      el.addEventListener("mouseleave", () => {
+        if (hoverPopupRef.current) {
+          hoverPopupRef.current.remove();
+          hoverPopupRef.current = null;
+        }
       });
 
       specialMarkersRef.current.push(

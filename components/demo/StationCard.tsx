@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { motion } from "framer-motion";
 
 interface StationCardProps {
@@ -28,7 +29,7 @@ interface StationCardProps {
   selectionReason?: string;
 }
 
-export default function StationCard({
+function StationCard({
   id,
   name,
   network,
@@ -80,7 +81,7 @@ export default function StationCard({
         isSelected
           ? "bg-zinc-900 border-cyan-400 shadow-[0_0_20px_rgba(0,240,255,0.1)]"
           : isRecommended
-            ? "bg-[#09151c] border-cyan-500/35 hover:border-cyan-500/50"
+            ? "bg-[#051C12] border-emerald-500/35 hover:border-emerald-500/50"
             : "bg-zinc-950 border-white/[0.06] hover:border-white/[0.12]"
       }`}
       whileHover={{ y: -2 }}
@@ -92,7 +93,7 @@ export default function StationCard({
           <div
             className={`flex items-center justify-center w-7 h-7 rounded-full font-mono font-extrabold text-xs shrink-0 ${
               rank === 1
-                ? "bg-cyan-400 text-zinc-950 shadow-[0_0_12px_rgba(0,240,255,0.5)]"
+                ? "bg-[#00FF88] text-zinc-950 shadow-[0_0_12px_rgba(0,255,136,0.5)]"
                 : rank <= 3
                   ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30"
                   : "bg-white/[0.06] text-zinc-400 border border-white/[0.08]"
@@ -106,7 +107,7 @@ export default function StationCard({
 
         {/* Right: recommended badge */}
         {isRecommended && (
-          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 shrink-0">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 shrink-0">
             AI PICK
           </span>
         )}
@@ -225,3 +226,5 @@ export default function StationCard({
     </motion.div>
   );
 }
+
+export default React.memo(StationCard);

@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --navy: #05070b;
-  --near-black: #02050a;
-  --orange: #ff7a00;
-  --shell: #101820;
+  --navy: #050B14;
+  --near-black: #0B1624;
+  --orange: #00E5FF;
+  --shell: #101D2E;
 }
 
 * {
@@ -19,13 +19,13 @@ html {
 }
 
 body {
-  background: #05070b;
+  background: #050B14;
   color: #ffffff;
   overflow-x: hidden;
 }
 
 ::selection {
-  background: rgba(255, 122, 0, 0.18);
+  background: rgba(0, 229, 255, 0.18);
   color: #ffffff;
 }
 
@@ -37,14 +37,14 @@ body {
 }
 
 .glass {
-  background: rgba(16, 24, 32, 0.65);
+  background: rgba(11, 22, 36, 0.65);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-dark {
-  background: rgba(10, 16, 24, 0.86);
+  background: rgba(5, 11, 20, 0.86);
   backdrop-filter: blur(22px) saturate(1.2);
   -webkit-backdrop-filter: blur(22px) saturate(1.2);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -71,10 +71,10 @@ body {
   background-size: 48px 48px;
 }
 
-.orange-glow {
+.orange-glow, .cyan-glow {
   box-shadow:
-    0 0 28px rgba(255, 122, 0, 0.17),
-    inset 0 0 22px rgba(255, 122, 0, 0.035);
+    0 0 28px rgba(0, 229, 255, 0.17),
+    inset 0 0 22px rgba(0, 229, 255, 0.035);
 }
 
 .shimmer {

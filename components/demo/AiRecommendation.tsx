@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { motion } from "framer-motion";
 
 interface AiRecommendationProps {
@@ -17,7 +18,7 @@ interface AiRecommendationProps {
   rejectedStations: { id: string; name: string; reason: string }[];
 }
 
-export default function AiRecommendation({
+function AiRecommendation({
   stationName,
   stationId,
   confidence,
@@ -208,3 +209,5 @@ export default function AiRecommendation({
     </motion.div>
   );
 }
+
+export default React.memo(AiRecommendation);
