@@ -17,23 +17,23 @@ export const TOP_N = 10;
 
 export interface StationInput {
   id: string;
-  reliabilityScore: number;        // 0–100
-  powerKw: number;                 // station max power
-  vehicleMaxKw: number;            // vehicle max accept speed
+  reliabilityScore: number; // 0–100
+  powerKw: number; // station max power
+  vehicleMaxKw: number; // vehicle max accept speed
   portsAvailable: number;
   portsTotal: number;
   predictedQueueMinutes: number;
-  distanceMiles: number;           // haversine to station from origin
-  connectorType: string;           // station connector
-  vehicleConnector: string;        // vehicle connector
+  distanceMiles: number; // haversine to station from origin
+  connectorType: string; // station connector
+  vehicleConnector: string; // vehicle connector
   pricePerKwh: number;
 }
 
 export interface RankingResult {
   id: string;
-  rank: number;                    // 1-based
-  compositeScore: number;          // 0–100
-  selectionReason: string;         // one-liner for the card
+  rank: number; // 1-based
+  compositeScore: number; // 0–100
+  selectionReason: string; // one-liner for the card
   breakdown: {
     reliability: number;
     speed: number;
@@ -47,11 +47,11 @@ export interface RankingResult {
 
 // ─── Connector compatibility map ─────────────────────────────────────────────
 const CONNECTOR_COMPAT: Record<string, string[]> = {
-  NACS:    ["NACS", "CCS1"],
-  CCS1:    ["CCS1", "NACS"],
-  CCS2:    ["CCS2"],
+  NACS: ["NACS", "CCS1"],
+  CCS1: ["CCS1", "NACS"],
+  CCS2: ["CCS2"],
   CHAdeMO: ["CHAdeMO"],
-  Type2:   ["Type2", "CCS2"],
+  Type2: ["Type2", "CCS2"],
 };
 
 function connectorScore(vehicleConnector: string, stationConnector: string): number {
@@ -86,13 +86,13 @@ function availabilityScore(portsAvailable: number, portsTotal: number): number {
 }
 
 const W = {
-  reliability:  0.25,
-  speed:        0.20,
+  reliability: 0.25,
+  speed: 0.2,
   availability: 0.15,
-  queue:        0.15,
-  proximity:    0.10,
-  connector:    0.10,
-  cost:         0.05,
+  queue: 0.15,
+  proximity: 0.1,
+  connector: 0.1,
+  cost: 0.05,
 } as const;
 
 function buildReason(
@@ -101,7 +101,7 @@ function buildReason(
   connectorMatch: boolean,
   pricePerKwh: number,
   predictedQueue: number,
-  powerKw: number,
+  powerKw: number
 ): string {
   if (rank === 1) {
     if (breakdown.speed >= 90 && breakdown.queue >= 80)
@@ -114,7 +114,8 @@ function buildReason(
   if (breakdown.cost >= 90) return `Best price at $${pricePerKwh.toFixed(2)}/kWh.`;
   if (breakdown.queue >= 90) return `Minimal wait — ${predictedQueue} min predicted queue.`;
   if (breakdown.speed >= 85) return `High-speed charging at ${powerKw} kW.`;
-  if (breakdown.reliability >= 95) return `Top-tier reliability (${breakdown.reliability}% uptime).`;
+  if (breakdown.reliability >= 95)
+    return `Top-tier reliability (${breakdown.reliability}% uptime).`;
   if (breakdown.availability >= 80) return `Multiple open ports available right now.`;
   return `Strong balance of speed, price, and availability.`;
 }
@@ -124,25 +125,25 @@ export function rankStations(stations: StationInput[]): RankingResult[] {
 
   const minPrice = Math.min(...stations.map((s) => s.pricePerKwh));
   const maxPrice = Math.max(...stations.map((s) => s.pricePerKwh));
-  const maxDist  = Math.max(...stations.map((s) => s.distanceMiles));
+  const maxDist = Math.max(...stations.map((s) => s.distanceMiles));
 
   const scored = stations.map((s) => {
-    const rel   = s.reliabilityScore;
-    const spd   = speedScore(s.powerKw, s.vehicleMaxKw);
+    const rel = s.reliabilityScore;
+    const spd = speedScore(s.powerKw, s.vehicleMaxKw);
     const avail = availabilityScore(s.portsAvailable, s.portsTotal);
     const queue = queueScore(s.predictedQueueMinutes);
-    const prox  = proximityScore(s.distanceMiles, maxDist);
-    const conn  = connectorScore(s.vehicleConnector, s.connectorType);
-    const cost  = costScore(s.pricePerKwh, minPrice, maxPrice);
+    const prox = proximityScore(s.distanceMiles, maxDist);
+    const conn = connectorScore(s.vehicleConnector, s.connectorType);
+    const cost = costScore(s.pricePerKwh, minPrice, maxPrice);
 
     const composite = Math.round(
-      rel   * W.reliability  +
-      spd   * W.speed        +
-      avail * W.availability +
-      queue * W.queue        +
-      prox  * W.proximity    +
-      conn  * W.connector    +
-      cost  * W.cost
+      rel * W.reliability +
+        spd * W.speed +
+        avail * W.availability +
+        queue * W.queue +
+        prox * W.proximity +
+        conn * W.connector +
+        cost * W.cost
     );
 
     return {
@@ -152,7 +153,15 @@ export function rankStations(stations: StationInput[]): RankingResult[] {
       pricePerKwh: s.pricePerKwh,
       predictedQueue: s.predictedQueueMinutes,
       powerKw: s.powerKw,
-      breakdown: { reliability: rel, speed: spd, availability: avail, queue, proximity: prox, connector: conn, cost },
+      breakdown: {
+        reliability: rel,
+        speed: spd,
+        availability: avail,
+        queue,
+        proximity: prox,
+        connector: conn,
+        cost,
+      },
     };
   });
 
@@ -168,7 +177,7 @@ export function rankStations(stations: StationInput[]): RankingResult[] {
       s.connectorMatch,
       s.pricePerKwh,
       s.predictedQueue,
-      s.powerKw,
+      s.powerKw
     ),
     breakdown: s.breakdown,
   }));

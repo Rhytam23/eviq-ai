@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --navy: #050B14;
-  --near-black: #0B1624;
-  --orange: #00E5FF;
-  --shell: #101D2E;
+  --navy: #050b14;
+  --near-black: #0b1624;
+  --orange: #00e5ff;
+  --shell: #101d2e;
 }
 
 * {
@@ -19,7 +19,7 @@ html {
 }
 
 body {
-  background: #050B14;
+  background: #050b14;
   color: #ffffff;
   overflow-x: hidden;
 }
@@ -71,7 +71,8 @@ body {
   background-size: 48px 48px;
 }
 
-.orange-glow, .cyan-glow {
+.orange-glow,
+.cyan-glow {
   box-shadow:
     0 0 28px rgba(0, 229, 255, 0.17),
     inset 0 0 22px rgba(0, 229, 255, 0.035);

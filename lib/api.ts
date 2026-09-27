@@ -250,7 +250,6 @@ export async function getChargingStations(
   return allStations;
 }
 
-
 // Nominatim Reverse Geocoding API
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
@@ -276,7 +275,6 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
   }
   return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
-
 
 // OSRM snap road distance helper for verification
 export async function getDistanceToNearestRoad(lat: number, lng: number): Promise<number> {

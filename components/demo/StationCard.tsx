@@ -201,7 +201,9 @@ function StationCard({
       {/* Selection reason */}
       {selectionReason && (
         <div className="mb-3 px-2.5 py-2 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-0.5">Reason</p>
+          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-0.5">
+            Reason
+          </p>
           <p className="text-[11px] text-cyan-300/80 leading-snug">{selectionReason}</p>
         </div>
       )}

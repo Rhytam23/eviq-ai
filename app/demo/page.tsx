@@ -77,37 +77,38 @@ const VEHICLES: VehicleProfile[] = [
 function sampleRoute(routeCoords: [number, number][], intervalMeters: number): Coordinate[] {
   if (routeCoords.length === 0) return [];
   const samples: Coordinate[] = [];
-  
+
   // Start with the first point (origin)
   const first = routeCoords[0];
   samples.push({ lng: first[0], lat: first[1] });
-  
+
   let accumulatedDist = 0;
   let lastLat = first[1];
   let lastLng = first[0];
-  
+
   for (let i = 1; i < routeCoords.length; i++) {
     const [lng, lat] = routeCoords[i];
     const dist = getDistanceLatLng(lastLat, lastLng, lat, lng);
     accumulatedDist += dist;
-    
+
     if (accumulatedDist >= intervalMeters) {
       samples.push({ lat, lng });
       accumulatedDist = 0;
     }
-    
+
     lastLat = lat;
     lastLng = lng;
   }
-  
+
   // Always include the last point (destination) if it's not already in there
   const last = routeCoords[routeCoords.length - 1];
   const lastSample = samples[samples.length - 1];
   const distToLast = getDistanceLatLng(lastSample.lat, lastSample.lng, last[1], last[0]);
-  if (distToLast > 1000) { // if the last point is > 1km away from the last sample
+  if (distToLast > 1000) {
+    // if the last point is > 1km away from the last sample
     samples.push({ lat: last[1], lng: last[0] });
   }
-  
+
   return samples;
 }
 
@@ -317,10 +318,10 @@ export default function DemoPage() {
   const handleSwap = () => {
     setIsOriginSelected(true);
     setIsDestSelected(true);
-    
+
     const tempInput = originInput;
     const tempCoord = originCoord;
-    
+
     setOriginInput(destInput);
     setOriginCoord(destCoord);
     setDestInput(tempInput);
@@ -333,13 +334,13 @@ export default function DemoPage() {
       alert("Geolocation is not supported by your browser");
       return;
     }
-    
+
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         const coord = { lat: latitude, lng: longitude };
-        
+
         try {
           const resolvedName = await reverseGeocode(latitude, longitude);
           setIsOriginSelected(true);
@@ -384,8 +385,10 @@ export default function DemoPage() {
       const intervalMiles = Math.max(12, Math.min(40, route.distanceMiles / 12));
       const intervalMeters = intervalMiles * 1609.34;
       const samples = sampleRoute(route.coordinates, intervalMeters);
-      
-      console.log(`[Telemetry] Routing distance: ${route.distanceMiles} mi. Sampled into ${samples.length} points along driving corridor.`);
+
+      console.log(
+        `[Telemetry] Routing distance: ${route.distanceMiles} mi. Sampled into ${samples.length} points along driving corridor.`
+      );
 
       // 4. Fetch Charging Stations in batches of 5 to avoid OCM rate-limiting.
       //    Firing all 70+ requests simultaneously on long routes causes the OCM
@@ -399,19 +402,23 @@ export default function DemoPage() {
         const batchResults = await Promise.all(
           batch.map((sample) =>
             getChargingStations(sample, searchRadiusMiles).catch((err) => {
-              console.warn(`[OCM Batch] Error at (${sample.lat.toFixed(4)}, ${sample.lng.toFixed(4)}):`, err);
+              console.warn(
+                `[OCM Batch] Error at (${sample.lat.toFixed(4)}, ${sample.lng.toFixed(4)}):`,
+                err
+              );
               return [] as ApiChargingStation[];
             })
           )
         );
         aggregatedStations.push(...batchResults.flat());
-        console.log(`[OCM Batch] Completed ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(samples.length / BATCH_SIZE)} — ${aggregatedStations.length} stations collected`);
+        console.log(
+          `[OCM Batch] Completed ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(samples.length / BATCH_SIZE)} — ${aggregatedStations.length} stations collected`
+        );
         // 300 ms pause between batches to stay within OCM free-tier rate limits
         if (i + BATCH_SIZE < samples.length) {
           await new Promise((res) => setTimeout(res, 300));
         }
       }
-
 
       // 5. Deduplicate aggregated results
       // Pass 1: exact ID deduplication
@@ -612,16 +619,25 @@ export default function DemoPage() {
   // Map of station id → rank (for TripMap highlighted markers)
   const recommendedRankMap = useMemo((): Record<string, number> => {
     const map: Record<string, number> = {};
-    rankingResults.forEach((r) => { map[r.id] = r.rank; });
+    rankingResults.forEach((r) => {
+      map[r.id] = r.rank;
+    });
     return map;
   }, [rankingResults]);
 
   // Top-10 stations merged with ranking metadata (for suggestion cards)
   const recommendedChargers = useMemo(() => {
-    return rankingResults.map((r) => {
-      const station = stationsWithDerived.find((s) => s.id === r.id)!;
-      return { ...station, rank: r.rank, selectionReason: r.selectionReason, compositeScore: r.compositeScore };
-    }).filter(Boolean);
+    return rankingResults
+      .map((r) => {
+        const station = stationsWithDerived.find((s) => s.id === r.id)!;
+        return {
+          ...station,
+          rank: r.rank,
+          selectionReason: r.selectionReason,
+          compositeScore: r.compositeScore,
+        };
+      })
+      .filter(Boolean);
   }, [rankingResults, stationsWithDerived]);
 
   // Find the #1 recommended charger node (highest composite score)
@@ -638,7 +654,7 @@ export default function DemoPage() {
 
   const mappedStations = useMemo(() => {
     return stationsWithDerived.map((st) => {
-      const rec = recommendedChargers.find(x => x.id === st.id);
+      const rec = recommendedChargers.find((x) => x.id === st.id);
       return {
         id: st.id,
         name: st.name,
@@ -654,11 +670,14 @@ export default function DemoPage() {
     });
   }, [stationsWithDerived, recommendedRankMap, activeStation, recommendedChargers]);
 
-  const handleSelectStation = useCallback((id: string) => {
-    if (reservationStatus === "NONE") {
-      setSelectedStationId(id);
-    }
-  }, [reservationStatus]);
+  const handleSelectStation = useCallback(
+    (id: string) => {
+      if (reservationStatus === "NONE") {
+        setSelectedStationId(id);
+      }
+    },
+    [reservationStatus]
+  );
 
   // ─── Waypoint Optimized Routing ─────────────────────────────────────────────
   useEffect(() => {
@@ -807,7 +826,9 @@ export default function DemoPage() {
   const totalChargers = stationsWithDerived.length;
 
   const offlineChargers = useMemo(() => {
-    return stationsWithDerived.filter((s) => s.reliabilityScore !== undefined && s.reliabilityScore < 83).length;
+    return stationsWithDerived.filter(
+      (s) => s.reliabilityScore !== undefined && s.reliabilityScore < 83
+    ).length;
   }, [stationsWithDerived]);
 
   const activeChargers = useMemo(() => {
@@ -939,7 +960,9 @@ export default function DemoPage() {
             <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1.5">
               Corridor Routing & Search
             </p>
-            <p className="text-[11px] text-zinc-650 mb-3">Define fleet logistics corridor endpoints</p>
+            <p className="text-[11px] text-zinc-650 mb-3">
+              Define fleet logistics corridor endpoints
+            </p>
 
             <div className="space-y-2">
               {/* Custom Search Form */}
@@ -966,7 +989,16 @@ export default function DemoPage() {
                         {isLocating ? (
                           <span className="w-2 h-2 border border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></span>
                         ) : (
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="8"
+                            height="8"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <circle cx="12" cy="12" r="10" />
                             <circle cx="12" cy="12" r="3" />
                             <line x1="12" y1="2" x2="12" y2="4" />
@@ -1020,7 +1052,9 @@ export default function DemoPage() {
                               aria-selected={activeOriginIndex === idx}
                               onClick={() => {
                                 setIsOriginSelected(true);
-                                setOriginInput(s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim());
+                                setOriginInput(
+                                  s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim()
+                                );
                                 setOriginCoord(s.coord);
                                 setOriginSuggestions([]);
                                 setShowOriginSuggestions(false);
@@ -1051,7 +1085,16 @@ export default function DemoPage() {
                     className="w-7 h-7 bg-zinc-950 border border-white/[0.08] hover:border-cyan-400/50 hover:text-cyan-400 text-zinc-400 rounded-full flex items-center justify-center transition-all duration-200 shadow-md active:scale-95"
                     title="Swap Origin and Destination"
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <polyline points="17 1 21 5 17 9" />
                       <path d="M3 11V9a4 4 0 0 1 4-4h14" />
                       <polyline points="7 23 3 19 7 15" />
@@ -1113,7 +1156,9 @@ export default function DemoPage() {
                               aria-selected={activeDestIndex === idx}
                               onClick={() => {
                                 setIsDestSelected(true);
-                                setDestInput(s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim());
+                                setDestInput(
+                                  s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim()
+                                );
                                 setDestCoord(s.coord);
                                 setDestSuggestions([]);
                                 setShowDestSuggestions(false);
@@ -1151,7 +1196,16 @@ export default function DemoPage() {
                     {searchingGeocodes ? (
                       <span className="w-3.5 h-3.5 border-2 border-zinc-950/20 border-t-zinc-950 rounded-full animate-spin"></span>
                     ) : (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
@@ -1167,7 +1221,16 @@ export default function DemoPage() {
                     {loading ? (
                       <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
                     ) : (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
                       </svg>
                     )}
@@ -1382,7 +1445,9 @@ export default function DemoPage() {
                           <td className="py-1.5 text-zinc-300 font-mono">
                             {st.lat.toFixed(6)}, {st.lng.toFixed(6)}
                           </td>
-                          <td className="py-1.5 text-emerald-400 font-bold font-mono">0.00m (Passed)</td>
+                          <td className="py-1.5 text-emerald-400 font-bold font-mono">
+                            0.00m (Passed)
+                          </td>
                           <td
                             className={`py-1.5 font-semibold font-mono ${roadSnap > 100 ? "text-amber-400" : "text-cyan-400"}`}
                           >
