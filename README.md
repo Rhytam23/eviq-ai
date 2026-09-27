@@ -203,3 +203,27 @@ The Battery Intelligence Engine evaluates dynamic charging curves against temper
 ### Can EVIQ AI lock charging reservations across different networks?
 
 Yes, our Reservation Engine handles unified, cross-network API booking locks, allowing drivers to reserve ports across multiple networks in a single unified interface.
+
+---
+
+## 📖 Project Understanding (Future Reference)
+
+EVIQ AI positions itself as a decision layer over the existing EV charging ecosystem rather than
+another charging map: it combines vehicle battery telemetry with charging-operator data to
+predict queues, explain charging decisions, and optimize routing/reservations for EV drivers.
+This is the most "product-shaped" repo in your account — it has CI (GitHub Actions), a real
+license, CONTRIBUTING/SECURITY/CODE_OF_CONDUCT docs, and a live Vercel deployment badge.
+
+**Stack:** Next.js 14 + React 18 + MapLibre GL (frontend), deployed on Vercel, MIT licensed.
+**Status:** actively maintained, product-style project with CI and community docs — more mature
+than a typical prototype.
+
+## 🎯 Where This Can Be Used
+
+- Clean-mobility / EV-tech product portfolio centerpiece — this is the repo to point investors,
+  recruiters or judges at first.
+- Reference implementation for "predictive routing + explainable AI decision" UX patterns,
+  reusable in other mobility or logistics problems.
+- **Hackathons:** excellent fit for clean-energy, EV/mobility, or climate-tech tracks — the
+  live map + AI copilot concept demos well on stage, and the existing CI/docs signal seriousness
+  to judges who check the repo.
