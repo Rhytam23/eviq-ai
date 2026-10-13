@@ -75,7 +75,14 @@ function StationCard({
       onClick={onSelect}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && onSelect()}
+      onKeyDown={(e) => {
+        // Ignore keys bubbling up from the nested Reserve button
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       aria-pressed={isSelected}
       className={`relative rounded-2xl p-5 cursor-pointer text-left transition-all duration-200 border ${
         isSelected

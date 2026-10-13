@@ -31,6 +31,16 @@ interface TripMapProps {
 const NORMAL_SOURCE = "stations-normal";
 const NORMAL_LAYER = "stations-circle";
 
+// Station names come from third-party data; never inject them into HTML unescaped
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export default function TripMap({
   origin,
   destination,
@@ -133,14 +143,22 @@ export default function TripMap({
         paint: { "line-color": "#00F0FF", "line-width": 3, "line-opacity": 0.85 },
       });
     }
+  }, [mapLoaded, routeCoordinates, origin, destination]);
 
-    if (routeCoordinates.length > 0) {
-      const bounds = new maplibregl.LngLatBounds();
-      routeCoordinates.forEach((c) => bounds.extend(c as [number, number]));
-      stations.forEach((st) => bounds.extend([st.lng, st.lat]));
-      map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 1000 });
-    }
-  }, [mapLoaded, routeCoordinates, origin, destination, stations]);
+  // ── 2b. Frame the route (only when the route itself changes, not on every
+  //        station/selection recompute, which would yank the camera around) ──
+  const stationsRef = useRef(stations);
+  stationsRef.current = stations;
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || routeCoordinates.length === 0) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    routeCoordinates.forEach((c) => bounds.extend(c as [number, number]));
+    stationsRef.current.forEach((st) => bounds.extend([st.lng, st.lat]));
+    map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 1000 });
+  }, [mapLoaded, routeCoordinates]);
 
   // ── 3. GPU-rendered circle layer for ALL normal (non-top-10) stations ──────
   useEffect(() => {
@@ -343,14 +361,14 @@ export default function TripMap({
               <span class="font-mono font-bold" style="color: ${accentColor}">#${rank} RECOMMENDATION</span>
               <span class="font-mono font-bold" style="color: ${accentColor}">${st.reliabilityScore ?? 95}% AI</span>
             </div>
-            <div class="font-bold text-[12.5px] mb-1 text-white truncate max-w-[190px]">${st.name}</div>
+            <div class="font-bold text-[12.5px] mb-1 text-white truncate max-w-[190px]">${escapeHtml(st.name)}</div>
             <div class="text-zinc-400 font-mono text-[10px] mb-2 flex items-center gap-1.5">
               <span class="text-white/80">${st.powerKw ?? 250} kW</span>
               <span class="text-zinc-600">•</span>
               <span>${waitText}</span>
             </div>
             <div class="text-[10.5px] leading-snug p-1.5 rounded border ${accentBg} italic font-medium">
-              ${reasonText}
+              ${escapeHtml(reasonText)}
             </div>
           </div>
         `;

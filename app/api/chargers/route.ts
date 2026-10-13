@@ -10,34 +10,51 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
-  const lat = searchParams.get("lat");
-  const lng = searchParams.get("lng");
-  const radius = searchParams.get("radius") ?? "15";
-  const pageSize = searchParams.get("pageSize") ?? "100";
-  const greaterThanId = searchParams.get("greaterThanId") ?? "0";
+  const lat = Number(searchParams.get("lat"));
+  const lng = Number(searchParams.get("lng"));
+  const radius = Number(searchParams.get("radius") ?? "15");
+  const pageSize = Number(searchParams.get("pageSize") ?? "100");
+  const greaterThanId = Number(searchParams.get("greaterThanId") ?? "0");
 
-  if (!lat || !lng) {
-    return NextResponse.json({ error: "lat and lng are required" }, { status: 400 });
+  if (
+    searchParams.get("lat") === null ||
+    searchParams.get("lng") === null ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lng) > 180
+  ) {
+    return NextResponse.json({ error: "valid lat and lng are required" }, { status: 400 });
   }
 
-  const ocmKey = process.env.NEXT_PUBLIC_OCM_API_KEY;
+  // Server-only key is preferred; the NEXT_PUBLIC_ name is kept as a fallback for existing setups.
+  const ocmKey = process.env.OCM_API_KEY ?? process.env.NEXT_PUBLIC_OCM_API_KEY;
   if (!ocmKey) {
     return NextResponse.json(
-      { error: "NEXT_PUBLIC_OCM_API_KEY environment variable is not set" },
+      { error: "OCM_API_KEY environment variable is not set" },
       { status: 500 }
     );
   }
+
+  // Clamp client-controlled values so this proxy can't be used to issue arbitrary-size OCM queries
+  const safeRadius = Number.isFinite(radius) ? Math.min(Math.max(radius, 1), 100) : 15;
+  const safePageSize = Number.isFinite(pageSize)
+    ? Math.min(Math.max(Math.floor(pageSize), 1), 200)
+    : 100;
+  const safeGreaterThanId = Number.isFinite(greaterThanId)
+    ? Math.max(0, Math.floor(greaterThanId))
+    : 0;
 
   let url =
     `https://api.openchargemap.io/v3/poi/` +
     `?output=json` +
     `&latitude=${lat}&longitude=${lng}` +
-    `&distance=${radius}&distanceunit=Miles` +
-    `&maxresults=${pageSize}` +
+    `&distance=${safeRadius}&distanceunit=Miles` +
+    `&maxresults=${safePageSize}` +
     `&compact=false&verbose=false`;
 
-  if (parseInt(greaterThanId) > 0) {
-    url += `&greaterthanid=${greaterThanId}&sortby=id_asc`;
+  if (safeGreaterThanId > 0) {
+    url += `&greaterthanid=${safeGreaterThanId}&sortby=id_asc`;
   }
 
   try {
@@ -53,7 +70,7 @@ export async function GET(req: NextRequest) {
     if (!ocmRes.ok) {
       return NextResponse.json(
         { error: `OCM API error ${ocmRes.status}: ${ocmRes.statusText}` },
-        { status: ocmRes.status }
+        { status: 502 }
       );
     }
 
@@ -66,7 +83,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("[/api/chargers] Proxy fetch failed:", err?.message ?? err);
-    // Return empty array so the client never sees an unhandled error
-    return NextResponse.json([], { status: 200 });
+    // Surface the failure instead of masking it as "no stations"; the client handles non-OK responses
+    return NextResponse.json({ error: "Upstream charger lookup failed" }, { status: 502 });
   }
 }

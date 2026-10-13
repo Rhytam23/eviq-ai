@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type ReservationStatus = "NONE" | "SEARCHING" | "CONFIRMED" | "ACTIVE" | "COMPLETED";
@@ -14,8 +14,18 @@ interface ReservationPanelProps {
   estimatedChargeTime: number;
   timeSaved: number;
   costSaved: number;
+  pricePerKwh: number;
+  /** Capacity of the active vehicle's battery, used for energy/cost simulation */
+  batteryCapacityKwh: number;
+  connectorType: string;
   onStatusChange: (status: ReservationStatus) => void;
 }
+
+const TARGET_SOC = 80;
+const LOCK_SECONDS = 15 * 60;
+const SIM_TICK_MS = 8500;
+const SIM_TICK_MINUTES = 1.5; // each tick represents 1.5 simulated minutes
+const FALLBACK_RATE = 0.35;
 
 function ReservationPanel({
   status,
@@ -27,12 +37,27 @@ function ReservationPanel({
   estimatedChargeTime,
   timeSaved,
   costSaved,
+  pricePerKwh,
+  batteryCapacityKwh,
+  connectorType,
   onStatusChange,
 }: ReservationPanelProps) {
   const shortName = stationName.split(" - ")[1] || stationName;
 
+  // Parent may pass a fresh callback every render; keep the latest in a ref so the timers
+  // below aren't torn down and restarted by unrelated parent re-renders.
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  // Session parameters are snapshotted when charging starts so that later input changes
+  // (e.g. weather toggles) don't restart a running session.
+  const simParamsRef = useRef({ arrivalSoc, powerKw, pricePerKwh, batteryCapacityKwh });
+  simParamsRef.current = { arrivalSoc, powerKw, pricePerKwh, batteryCapacityKwh };
+
   // Countdown timer for Reservation (15 mins)
-  const [lockSeconds, setLockSeconds] = useState(15 * 60);
+  const [lockSeconds, setLockSeconds] = useState(LOCK_SECONDS);
 
   // Live charging simulation states
   const [currentSoc, setCurrentSoc] = useState(arrivalSoc);
@@ -42,84 +67,92 @@ function ReservationPanel({
   const [chargingMinutesElapsed, setChargingMinutesElapsed] = useState(0);
   const [powerHistory, setPowerHistory] = useState<number[]>([]);
 
+  // Energy the session will deliver (arrival SoC -> target SoC)
+  const energyToDeliverKwh = Math.max(0, ((TARGET_SOC - arrivalSoc) * batteryCapacityKwh) / 100);
+
   // 1. Simulate API searching transition
   useEffect(() => {
     if (status === "SEARCHING") {
       const timer = setTimeout(() => {
-        onStatusChange("CONFIRMED");
+        onStatusChangeRef.current("CONFIRMED");
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [status, onStatusChange]);
+  }, [status]);
 
   // 2. Countdown lock timer for CONFIRMED state
   useEffect(() => {
     if (status !== "CONFIRMED") {
-      setLockSeconds(15 * 60);
+      setLockSeconds(LOCK_SECONDS);
       return;
     }
     const interval = setInterval(() => {
-      setLockSeconds((s) => {
-        if (s <= 1) {
-          clearInterval(interval);
-          onStatusChange("NONE"); // Expired
-          return 0;
-        }
-        return s - 1;
-      });
+      setLockSeconds((s) => Math.max(0, s - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [status, onStatusChange]);
+  }, [status]);
 
-  // 3. Charging simulation in ACTIVE state
+  // Lock expired: release the reservation (kept out of the state updater above)
   useEffect(() => {
-    if (status !== "ACTIVE") {
-      setCurrentSoc(arrivalSoc);
-      setKwhDelivered(0);
-      setAccumulatedCost(0);
-      setChargingMinutesElapsed(0);
-      setPowerHistory([powerKw]);
+    if (status === "CONFIRMED" && lockSeconds === 0) {
+      onStatusChangeRef.current("NONE");
+    }
+  }, [status, lockSeconds]);
+
+  // 3a. Keep idle display values in sync with the selected station
+  useEffect(() => {
+    if (status === "ACTIVE") return;
+    setCurrentSoc(arrivalSoc);
+    setCurrentPower(powerKw);
+    setKwhDelivered(0);
+    setAccumulatedCost(0);
+    setChargingMinutesElapsed(0);
+    setPowerHistory([powerKw]);
+  }, [status, arrivalSoc, powerKw]);
+
+  // 3b. Charging simulation in ACTIVE state
+  useEffect(() => {
+    if (status !== "ACTIVE") return;
+
+    const params = simParamsRef.current;
+    if (params.arrivalSoc >= TARGET_SOC) {
+      // Already at/above target: nothing to deliver
+      onStatusChangeRef.current("COMPLETED");
       return;
     }
 
+    let soc = params.arrivalSoc;
+    let kwh = 0;
+    let minutes = 0;
+    const rate = params.pricePerKwh > 0 ? params.pricePerKwh : FALLBACK_RATE;
+
     const interval = setInterval(() => {
-      setCurrentSoc((prevSoc) => {
-        if (prevSoc >= 80) {
-          clearInterval(interval);
-          onStatusChange("COMPLETED");
-          return 80;
-        }
+      // Charging speed curve simulation (NMC/LFP chemistry style: slows down at higher SoC)
+      let speedFactor = 1.0;
+      if (soc > 70) speedFactor = 0.4;
+      else if (soc > 50) speedFactor = 0.7;
+      else if (soc > 30) speedFactor = 0.9;
 
-        // Charging speed curve simulation (NMC/LFP chemistry style: slows down at higher SoC)
-        let speedFactor = 1.0;
-        if (prevSoc > 70) speedFactor = 0.4;
-        else if (prevSoc > 50) speedFactor = 0.7;
-        else if (prevSoc > 30) speedFactor = 0.9;
+      const livePower = Math.round(params.powerKw * speedFactor);
+      kwh += livePower * (SIM_TICK_MINUTES / 60);
+      minutes += SIM_TICK_MINUTES;
+      soc += 1;
 
-        const livePower = Math.round(powerKw * speedFactor);
-        setCurrentPower(livePower);
-        setPowerHistory((prev) => [...prev, livePower].slice(-15));
+      setCurrentSoc(soc);
+      setCurrentPower(livePower);
+      setPowerHistory((prev) => [...prev, livePower].slice(-15));
+      setKwhDelivered(kwh);
+      setAccumulatedCost(kwh * rate);
+      setChargingMinutesElapsed(minutes);
 
-        // Standard 75kWh battery capacity assumption
-        const batteryCapacity = 75;
-        const incrementalKwh = livePower * (1.5 / 60); // Simulate rapid time increment (each tick represents 1.5 mins)
-
-        setKwhDelivered((prevKwh) => {
-          const nextKwh = prevKwh + incrementalKwh;
-          // compute cost
-          const rate = estimatedCost / (batteryCapacity * (0.8 - arrivalSoc / 100));
-          setAccumulatedCost(nextKwh * (rate > 0 ? rate : 0.35));
-          return nextKwh;
-        });
-
-        setChargingMinutesElapsed((prev) => prev + 1.5);
-
-        return prevSoc + 1;
-      });
-    }, 8500);
+      if (soc >= TARGET_SOC) {
+        clearInterval(interval);
+        onStatusChangeRef.current("COMPLETED");
+      }
+    }, SIM_TICK_MS);
 
     return () => clearInterval(interval);
-  }, [status, arrivalSoc, powerKw, estimatedCost, onStatusChange]);
+  }, [status]);
 
   const lockMins = Math.floor(lockSeconds / 60);
   const lockSecs = lockSeconds % 60;
@@ -208,7 +241,9 @@ function ReservationPanel({
               </div>
               <div className="bg-zinc-950 p-3 rounded-xl border border-white/[0.03]">
                 <p className="text-[9px] font-mono text-zinc-500 uppercase">Connector Type</p>
-                <p className="font-semibold text-white mt-0.5">NACS (Port {portNumber})</p>
+                <p className="font-semibold text-white mt-0.5">
+                  {connectorType} (Port {portNumber})
+                </p>
               </div>
               <div className="bg-zinc-950 p-3 rounded-xl border border-white/[0.03]">
                 <p className="text-[9px] font-mono text-zinc-500 uppercase">Est. Invoice</p>
@@ -236,7 +271,7 @@ function ReservationPanel({
               </button>
               <button
                 onClick={() => onStatusChange("ACTIVE")}
-                className="flex-1 py-2 rounded-xl bg-white text-zinc-950 text-xs font-bold hover:bg-zinc-150 active:scale-[0.98] transition-all"
+                className="flex-1 py-2 rounded-xl bg-white text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-[0.98] transition-all"
               >
                 Start Charging
               </button>
@@ -273,7 +308,19 @@ function ReservationPanel({
               <div className="w-full h-2 bg-white/[0.05] rounded-full overflow-hidden mb-3">
                 <div
                   className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentSoc - arrivalSoc) / (80 - arrivalSoc)) * 100}%` }}
+                  style={{
+                    width: `${
+                      arrivalSoc >= TARGET_SOC
+                        ? 100
+                        : Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              ((currentSoc - arrivalSoc) / (TARGET_SOC - arrivalSoc)) * 100
+                            )
+                          )
+                    }%`,
+                  }}
                 />
               </div>
               <div className="flex justify-between text-[10px] font-mono text-zinc-400">
@@ -343,12 +390,12 @@ function ReservationPanel({
                     />
                   </svg>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-[9px] font-mono text-zinc-650">
+                  <div className="h-full flex items-center justify-center text-[9px] font-mono text-zinc-600">
                     CALIBRATING CELL TELEMETRY...
                   </div>
                 )}
               </div>
-              <div className="flex justify-between text-[8px] font-mono text-zinc-650 mt-1">
+              <div className="flex justify-between text-[8px] font-mono text-zinc-600 mt-1">
                 <span>0m</span>
                 <span>PEAK RATE: {Math.max(...powerHistory, 0)} kW</span>
                 <span>LIVE</span>
@@ -395,7 +442,7 @@ function ReservationPanel({
               <div className="bg-zinc-950 p-2.5 rounded-xl border border-white/[0.02]">
                 <p className="text-[9px] font-mono text-zinc-500 uppercase">Energy Delivered</p>
                 <p className="font-semibold text-white font-mono mt-0.5">
-                  {(estimatedCost / 0.35).toFixed(1)} kWh
+                  {energyToDeliverKwh.toFixed(1)} kWh
                 </p>
               </div>
               <div className="bg-zinc-950 p-2.5 rounded-xl border border-white/[0.02]">
@@ -407,7 +454,7 @@ function ReservationPanel({
               <div className="bg-zinc-950 p-2.5 rounded-xl border border-white/[0.02]">
                 <p className="text-[9px] font-mono text-zinc-500 uppercase">Carbon Offset</p>
                 <p className="font-semibold text-emerald-400 font-mono mt-0.5">
-                  -{((estimatedCost / 0.35) * 0.43).toFixed(1)} kg CO₂
+                  -{(energyToDeliverKwh * 0.43).toFixed(1)} kg CO₂
                 </p>
               </div>
               <div className="bg-zinc-950 p-2.5 rounded-xl border border-white/[0.02]">

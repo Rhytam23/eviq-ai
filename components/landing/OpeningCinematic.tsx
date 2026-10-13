@@ -7,12 +7,18 @@ export default function OpeningCinematic() {
   const [opacity, setOpacity] = useState(1);
 
   useEffect(() => {
+    // Skip the intro entirely for users who prefer reduced motion
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisible(false);
+      return;
+    }
     const c = canvasRef.current;
     if (!c) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
 
     let raf = 0;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const resize = () => {
       c.width = window.innerWidth * 2;
       c.height = window.innerHeight * 2;
@@ -135,14 +141,15 @@ export default function OpeningCinematic() {
           });
         }
 
-        ctx.fillStyle = "rgba(255, 122, 0, 0.7)";
         ctx.font = "20px monospace";
-        activeHex.forEach((h, idx) => {
+        for (let i = activeHex.length - 1; i >= 0; i--) {
+          const h = activeHex[i];
+          ctx.fillStyle = `rgba(255, 122, 0, ${0.7 * Math.max(0, h.opacity)})`;
           ctx.fillText(h.text, cx + 90, h.y);
           h.y -= 1.2;
           h.opacity -= 0.02;
-          if (h.opacity <= 0) activeHex.splice(idx, 1);
-        });
+          if (h.opacity <= 0) activeHex.splice(i, 1);
+        }
       } else {
         // Phase 3 & 4: Zoom out/expand camera into the layout
         const p3 = (t - 0.75) / 0.25; // 0 to 1
@@ -177,13 +184,14 @@ export default function OpeningCinematic() {
         raf = requestAnimationFrame(loop);
       } else {
         setOpacity(0);
-        setTimeout(() => setVisible(false), 700);
+        hideTimer = setTimeout(() => setVisible(false), 700);
       }
     };
 
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
+      if (hideTimer) clearTimeout(hideTimer);
       window.removeEventListener("resize", resize);
     };
   }, []);
@@ -192,7 +200,7 @@ export default function OpeningCinematic() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-[#05070B] flex items-center justify-center overflow-hidden transition-opacity duration-700"
+      className="fixed inset-0 z-[9999] pointer-events-none bg-[#05070B] flex items-center justify-center overflow-hidden transition-opacity duration-700"
       style={{ opacity }}
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
