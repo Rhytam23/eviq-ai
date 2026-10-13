@@ -191,7 +191,7 @@ function AiRecommendation({
           let costCount = 0;
           let reliabilityCount = 0;
           let deviationCount = 0;
-          let compatibilityCount = 0;
+          let lowerScoreCount = 0;
 
           rejectedStations.forEach((st) => {
             const reason = st.reason.toLowerCase();
@@ -212,12 +212,8 @@ function AiRecommendation({
             ) {
               deviationCount++;
             } else {
-              // Distribute general "lower composite score" filters logically between deviation and compatibility
-              if (st.id.charCodeAt(0) % 2 === 0) {
-                compatibilityCount++;
-              } else {
-                deviationCount++;
-              }
+              // Generic "lower composite score" rejections
+              lowerScoreCount++;
             }
           });
 
@@ -269,17 +265,15 @@ function AiRecommendation({
                     </div>
                     <div className="flex justify-between items-center py-1 border-b border-white/[0.03]">
                       <span className="text-zinc-400 flex items-center gap-1.5">
-                        <span className="text-rose-500/80">✕</span> Long route deviation
+                        <span className="text-rose-500/80">✕</span> Congestion / route deviation
                       </span>
                       <span className="text-white font-semibold">{deviationCount} stations</span>
                     </div>
                     <div className="flex justify-between items-center py-1">
                       <span className="text-zinc-400 flex items-center gap-1.5">
-                        <span className="text-rose-500/80">✕</span> Compatibility issues
+                        <span className="text-rose-500/80">✕</span> Lower overall score
                       </span>
-                      <span className="text-white font-semibold">
-                        {compatibilityCount} stations
-                      </span>
+                      <span className="text-white font-semibold">{lowerScoreCount} stations</span>
                     </div>
                   </div>
                 </div>

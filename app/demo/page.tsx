@@ -871,11 +871,11 @@ export default function DemoPage() {
     <div className="min-h-screen bg-[#050B14] text-white font-sans flex flex-col noise relative">
       {/* ─── Top Enterprise Navbar ───────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-[#050B14]/90 backdrop-blur-md border-b border-white/[0.06] select-none">
-        <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between gap-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3 sm:gap-6">
           <div className="flex items-center gap-4">
             <a
               href="/"
-              className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5"
+              className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path
@@ -892,7 +892,7 @@ export default function DemoPage() {
             <div className="flex items-center gap-2">
               <span className="text-[14px] font-extrabold tracking-tight text-white">EVIQ</span>
               <span className="text-[14px] font-light text-cyan-400">AI</span>
-              <span className="ml-1.5 text-[8px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+              <span className="hidden sm:inline ml-1.5 whitespace-nowrap text-[8px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                 PRO PILOT DEMO
               </span>
             </div>
@@ -934,7 +934,7 @@ export default function DemoPage() {
           {/* Current Lease Status */}
           <div className="flex items-center gap-2">
             {reservationStatus === "NONE" ? (
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
+              <span className="hidden sm:inline text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
                 No Active Reservation
               </span>
             ) : reservationStatus === "CONFIRMED" ? (
@@ -1182,7 +1182,9 @@ export default function DemoPage() {
                 </div>
 
                 <div className="w-full flex justify-between items-center text-[10px] text-cyan-400 font-mono border border-cyan-500/10 bg-cyan-500/5 px-3 py-2 rounded-xl">
-                  <span>● TELEMETRY LINK ONLINE</span>
+                  <span className={apiError ? "text-red-400" : undefined}>
+                    ● TELEMETRY LINK {apiError ? "OFFLINE" : "ONLINE"}
+                  </span>
                   <span className="text-zinc-500">AUTO-ROUTING ACTIVE</span>
                 </div>
 
