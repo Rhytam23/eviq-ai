@@ -6,6 +6,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
+          "var(--font-inter)",
           "Inter",
           "SF Pro Display",
           "-apple-system",
@@ -14,7 +15,7 @@ const config: Config = {
           "system-ui",
           "sans-serif",
         ],
-        display: ["Inter", "SF Pro Display", "system-ui", "sans-serif"],
+        display: ["var(--font-inter)", "Inter", "SF Pro Display", "system-ui", "sans-serif"],
       },
       colors: {
         navy: {

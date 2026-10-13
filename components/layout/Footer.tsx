@@ -24,7 +24,7 @@ export default function Footer() {
             <div className="text-white font-[600] text-[12.5px] tracking-wide">Product</div>
             <ul className="mt-3 space-y-2">
               <li>
-                <a href="#product" className="hover:text-white">
+                <a href="#platform" className="hover:text-white">
                   Platform
                 </a>
               </li>
@@ -34,7 +34,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#demo" className="hover:text-white">
+                <a href="/demo" className="hover:text-white">
                   Live demo
                 </a>
               </li>

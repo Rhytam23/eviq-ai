@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import {
   Coordinate,
@@ -13,6 +13,8 @@ import {
   getChargingStations,
   getDistanceToNearestRoad,
   reverseGeocode,
+  searchPlaces,
+  PlaceSuggestion,
 } from "@/lib/api";
 import { rankStations, RankingResult } from "@/lib/ranking";
 
@@ -159,6 +161,19 @@ function getMinDistanceToRoute(station: Coordinate, routeCoords: [number, number
   return minDistance;
 }
 
+// Stable reference so the map doesn't see a "new" empty route on every render
+const EMPTY_ROUTE: [number, number][] = [];
+
+// "Boston, Suffolk County, Massachusetts, USA" -> "Boston, Suffolk County"
+function shortPlaceName(displayName: string): string {
+  return displayName
+    .split(",")
+    .slice(0, 2)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
 export default function DemoPage() {
   // ─── State ────────────────────────────────────────────────────────────────
   const [originInput, setOriginInput] = useState<string>("New York, NY");
@@ -167,8 +182,10 @@ export default function DemoPage() {
   const [originCoord, setOriginCoord] = useState<Coordinate>({ lat: 40.7128, lng: -74.006 });
   const [destCoord, setDestCoord] = useState<Coordinate>({ lat: 42.3601, lng: -71.0589 });
 
-  const [isOriginSelected, setIsOriginSelected] = useState<boolean>(false);
-  const [isDestSelected, setIsDestSelected] = useState<boolean>(false);
+  // Text last set programmatically (default / picked suggestion / GPS / swap). Autocomplete is
+  // skipped while the input still equals it, so selecting a place doesn't re-trigger a search.
+  const committedOriginText = useRef<string>("New York, NY");
+  const committedDestText = useRef<string>("Boston, MA");
   const [isLocating, setIsLocating] = useState<boolean>(false);
 
   const [batterySoc, setBatterySoc] = useState<number>(25);
@@ -188,7 +205,7 @@ export default function DemoPage() {
 
   // Error reporting and Debug Mode
   const [apiError, setApiError] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState<boolean>(true);
+  const [debugMode, setDebugMode] = useState<boolean>(false);
   const [stationRoadDistances, setStationRoadDistances] = useState<Record<string, number>>({});
 
   // Reservation & session flow state
@@ -199,10 +216,8 @@ export default function DemoPage() {
   }, [selectedVehicleId]);
 
   // Suggestions states
-  const [originSuggestions, setOriginSuggestions] = useState<{ name: string; coord: Coordinate }[]>(
-    []
-  );
-  const [destSuggestions, setDestSuggestions] = useState<{ name: string; coord: Coordinate }[]>([]);
+  const [originSuggestions, setOriginSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [destSuggestions, setDestSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showOriginSuggestions, setShowOriginSuggestions] = useState<boolean>(false);
   const [showDestSuggestions, setShowDestSuggestions] = useState<boolean>(false);
   const [activeOriginIndex, setActiveOriginIndex] = useState<number>(-1);
@@ -210,32 +225,9 @@ export default function DemoPage() {
   const [loadingOriginSuggestions, setLoadingOriginSuggestions] = useState<boolean>(false);
   const [loadingDestSuggestions, setLoadingDestSuggestions] = useState<boolean>(false);
 
-  // On-mount: Dynamically geocode the default route live (no hardcoded coordinates lookup)
-  useEffect(() => {
-    const initDefaultRoute = async () => {
-      setLoading(true);
-      try {
-        const geoOrigin = await geocodeAddress("New York, NY");
-        const geoDest = await geocodeAddress("Boston, MA");
-        if (geoOrigin && geoDest) {
-          setIsOriginSelected(true);
-          setIsDestSelected(true);
-          setOriginCoord(geoOrigin);
-          setDestCoord(geoDest);
-        }
-      } catch (err) {
-        console.error("Mount route initialization failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initDefaultRoute();
-  }, []);
-
   // Debounced effect for Origin Input
   useEffect(() => {
-    if (isOriginSelected) {
-      setIsOriginSelected(false);
+    if (originInput === committedOriginText.current) {
       setOriginSuggestions([]);
       setLoadingOriginSuggestions(false);
       return;
@@ -247,36 +239,26 @@ export default function DemoPage() {
     }
 
     setLoadingOriginSuggestions(true);
+    const controller = new AbortController();
     const delayDebounce = setTimeout(async () => {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(originInput)}&format=json&limit=4`;
-        const res = await fetch(url, {
-          headers: { "User-Agent": "EviqAiDemoEnterpriseApplication/1.0" },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const list = data.map((item: any) => ({
-              name: item.display_name,
-              coord: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) },
-            }));
-            setOriginSuggestions(list);
-          }
-        }
+        setOriginSuggestions(await searchPlaces(originInput, controller.signal));
       } catch (err) {
-        console.error(err);
+        if (!controller.signal.aborted) console.error(err);
       } finally {
-        setLoadingOriginSuggestions(false);
+        if (!controller.signal.aborted) setLoadingOriginSuggestions(false);
       }
     }, 400);
 
-    return () => clearTimeout(delayDebounce);
-  }, [originInput, isOriginSelected]);
+    return () => {
+      clearTimeout(delayDebounce);
+      controller.abort();
+    };
+  }, [originInput]);
 
   // Debounced effect for Destination Input
   useEffect(() => {
-    if (isDestSelected) {
-      setIsDestSelected(false);
+    if (destInput === committedDestText.current) {
       setDestSuggestions([]);
       setLoadingDestSuggestions(false);
       return;
@@ -288,36 +270,27 @@ export default function DemoPage() {
     }
 
     setLoadingDestSuggestions(true);
+    const controller = new AbortController();
     const delayDebounce = setTimeout(async () => {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destInput)}&format=json&limit=4`;
-        const res = await fetch(url, {
-          headers: { "User-Agent": "EviqAiDemoEnterpriseApplication/1.0" },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const list = data.map((item: any) => ({
-              name: item.display_name,
-              coord: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) },
-            }));
-            setDestSuggestions(list);
-          }
-        }
+        setDestSuggestions(await searchPlaces(destInput, controller.signal));
       } catch (err) {
-        console.error(err);
+        if (!controller.signal.aborted) console.error(err);
       } finally {
-        setLoadingDestSuggestions(false);
+        if (!controller.signal.aborted) setLoadingDestSuggestions(false);
       }
     }, 400);
 
-    return () => clearTimeout(delayDebounce);
-  }, [destInput, isDestSelected]);
+    return () => {
+      clearTimeout(delayDebounce);
+      controller.abort();
+    };
+  }, [destInput]);
 
   // Swap origin and destination endpoints
   const handleSwap = () => {
-    setIsOriginSelected(true);
-    setIsDestSelected(true);
+    committedOriginText.current = destInput;
+    committedDestText.current = originInput;
 
     const tempInput = originInput;
     const tempCoord = originCoord;
@@ -343,13 +316,13 @@ export default function DemoPage() {
 
         try {
           const resolvedName = await reverseGeocode(latitude, longitude);
-          setIsOriginSelected(true);
+          committedOriginText.current = resolvedName;
           setOriginInput(resolvedName);
           setOriginCoord(coord);
         } catch (err) {
           console.error(err);
-          setIsOriginSelected(true);
-          setOriginInput(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          committedOriginText.current = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setOriginInput(committedOriginText.current);
           setOriginCoord(coord);
         } finally {
           setIsLocating(false);
@@ -365,7 +338,13 @@ export default function DemoPage() {
   };
 
   // ─── Fetch Route, Weather, and Stations ─────────────────────────────────────
+  const planRunId = useRef(0);
+
   const triggerJourneyPlan = async () => {
+    // Only the most recent run may write results; earlier in-flight runs are discarded
+    const runId = ++planRunId.current;
+    const isStale = () => runId !== planRunId.current;
+
     setLoading(true);
     setApiError(null);
     try {
@@ -374,10 +353,12 @@ export default function DemoPage() {
       if (!route) {
         throw new Error("OSRM Routing API failed to compute a path for this corridor.");
       }
+      if (isStale()) return;
       setDirectRouteData(route);
 
       // 2. Fetch Destination Weather
       const weather = await getWeather(destCoord.lat, destCoord.lng);
+      if (isStale()) return;
       setWeatherData(weather);
 
       // 3. Sample coordinates along the driving corridor
@@ -396,9 +377,11 @@ export default function DemoPage() {
       const searchRadiusMiles = Math.max(15, intervalMiles * 1.25);
       const BATCH_SIZE = 5;
       const aggregatedStations: ApiChargingStation[] = [];
+      let lookupError: string | null = null;
 
       for (let i = 0; i < samples.length; i += BATCH_SIZE) {
         const batch = samples.slice(i, i + BATCH_SIZE);
+        if (isStale()) return;
         const batchResults = await Promise.all(
           batch.map((sample) =>
             getChargingStations(sample, searchRadiusMiles).catch((err) => {
@@ -406,6 +389,7 @@ export default function DemoPage() {
                 `[OCM Batch] Error at (${sample.lat.toFixed(4)}, ${sample.lng.toFixed(4)}):`,
                 err
               );
+              lookupError = err?.message ?? String(err);
               return [] as ApiChargingStation[];
             })
           )
@@ -433,7 +417,12 @@ export default function DemoPage() {
       // Pass 2: coordinate deduplication (merging chargers within 15 meters)
       const deduplicated = deduplicateStations(uniqueById);
 
+      if (isStale()) return;
+
       if (deduplicated.length === 0) {
+        if (lookupError) {
+          throw new Error(`Charging station lookup failed: ${lookupError}`);
+        }
         throw new Error(
           `Zero charging stations identified along the driving corridor from ${originInput} to ${destInput}.`
         );
@@ -453,17 +442,22 @@ export default function DemoPage() {
           }
         })
       );
+      if (isStale()) return;
       setStationRoadDistances(roadDistancesMap);
 
       setRawStations(deduplicated);
       setSelectedStationId(null);
       setReservationStatus("NONE");
     } catch (err: any) {
+      if (isStale()) return;
       console.error("Journey planning orchestration failed:", err);
       setApiError(err.message || "Failed to load live geocoding/charging telemetry.");
       setRawStations([]);
+      setDirectRouteData(null);
+      setOptimizedRouteData(null);
     } finally {
-      setLoading(false);
+      // A newer run owns the loading flag
+      if (!isStale()) setLoading(false);
     }
   };
 
@@ -539,7 +533,8 @@ export default function DemoPage() {
 
       // 4. Charge duration to 80%
       const energyNeeded = Math.max(0, ((80 - arrivalSoc) * currentVehicle.capacityKwh) / 100);
-      const actualPowerSpeed = Math.min(currentVehicle.maxChargingSpeedKw, st.powerKw);
+      // OCM often omits power ratings; floor at 1 kW so an unknown rating can't divide by zero
+      const actualPowerSpeed = Math.max(1, Math.min(currentVehicle.maxChargingSpeedKw, st.powerKw));
       const chargingTimeMinutes = Math.round((energyNeeded / actualPowerSpeed) * 60);
 
       // 5. Total cost based on rate
@@ -627,17 +622,18 @@ export default function DemoPage() {
 
   // Top-10 stations merged with ranking metadata (for suggestion cards)
   const recommendedChargers = useMemo(() => {
-    return rankingResults
-      .map((r) => {
-        const station = stationsWithDerived.find((s) => s.id === r.id)!;
-        return {
+    return rankingResults.flatMap((r) => {
+      const station = stationsWithDerived.find((s) => s.id === r.id);
+      if (!station) return [];
+      return [
+        {
           ...station,
           rank: r.rank,
           selectionReason: r.selectionReason,
           compositeScore: r.compositeScore,
-        };
-      })
-      .filter(Boolean);
+        },
+      ];
+    });
   }, [rankingResults, stationsWithDerived]);
 
   // Find the #1 recommended charger node (highest composite score)
@@ -683,6 +679,8 @@ export default function DemoPage() {
   useEffect(() => {
     if (!originCoord || !destCoord) return;
 
+    let cancelled = false;
+
     const fetchOptimizedRoute = async () => {
       // If there's a recommended station, fetch route snapped to it as a waypoint
       if (recommendedStation) {
@@ -690,6 +688,7 @@ export default function DemoPage() {
           lat: recommendedStation.lat,
           lng: recommendedStation.lng,
         });
+        if (cancelled) return;
         if (route) {
           setOptimizedRouteData(route);
           return;
@@ -703,8 +702,31 @@ export default function DemoPage() {
     };
 
     fetchOptimizedRoute();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [originCoord, destCoord, recommendedStation?.id, directRouteData]);
+
+  const selectOriginSuggestion = (s: PlaceSuggestion) => {
+    const text = shortPlaceName(s.name);
+    committedOriginText.current = text;
+    setOriginInput(text);
+    setOriginCoord(s.coord);
+    setOriginSuggestions([]);
+    setShowOriginSuggestions(false);
+    setActiveOriginIndex(-1);
+  };
+
+  const selectDestSuggestion = (s: PlaceSuggestion) => {
+    const text = shortPlaceName(s.name);
+    committedDestText.current = text;
+    setDestInput(text);
+    setDestCoord(s.coord);
+    setDestSuggestions([]);
+    setShowDestSuggestions(false);
+    setActiveDestIndex(-1);
+  };
 
   const handleOriginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showOriginSuggestions || originSuggestions.length === 0) return;
@@ -720,12 +742,7 @@ export default function DemoPage() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (activeOriginIndex >= 0 && activeOriginIndex < originSuggestions.length) {
-        const s = originSuggestions[activeOriginIndex];
-        setOriginInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
-        setOriginCoord(s.coord);
-        setOriginSuggestions([]);
-        setShowOriginSuggestions(false);
-        setActiveOriginIndex(-1);
+        selectOriginSuggestion(originSuggestions[activeOriginIndex]);
       }
     } else if (e.key === "Escape") {
       setShowOriginSuggestions(false);
@@ -745,12 +762,7 @@ export default function DemoPage() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (activeDestIndex >= 0 && activeDestIndex < destSuggestions.length) {
-        const s = destSuggestions[activeDestIndex];
-        setDestInput(s.name.split(",")[0] + ", " + s.name.split(",")[1]);
-        setDestCoord(s.coord);
-        setDestSuggestions([]);
-        setShowDestSuggestions(false);
-        setActiveDestIndex(-1);
+        selectDestSuggestion(destSuggestions[activeDestIndex]);
       }
     } else if (e.key === "Escape") {
       setShowDestSuggestions(false);
@@ -922,7 +934,7 @@ export default function DemoPage() {
           {/* Current Lease Status */}
           <div className="flex items-center gap-2">
             {reservationStatus === "NONE" ? (
-              <span className="text-[9px] font-mono text-zinc-650 uppercase tracking-wider">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
                 No Active Reservation
               </span>
             ) : reservationStatus === "CONFIRMED" ? (
@@ -936,7 +948,7 @@ export default function DemoPage() {
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                 <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider animate-pulse">
-                  CHARGING INSTALLED
+                  CHARGING IN PROGRESS
                 </span>
               </div>
             ) : (
@@ -960,7 +972,7 @@ export default function DemoPage() {
             <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1.5">
               Corridor Routing & Search
             </p>
-            <p className="text-[11px] text-zinc-650 mb-3">
+            <p className="text-[11px] text-zinc-600 mb-3">
               Define fleet logistics corridor endpoints
             </p>
 
@@ -983,7 +995,7 @@ export default function DemoPage() {
                         type="button"
                         onClick={handleUseCurrentLocation}
                         disabled={isLocating}
-                        className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 disabled:text-zinc-650 disabled:bg-zinc-950/20 transition-colors flex items-center gap-1 bg-cyan-500/5 hover:bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/15"
+                        className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 disabled:text-zinc-600 disabled:bg-zinc-950/20 transition-colors flex items-center gap-1 bg-cyan-500/5 hover:bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/15"
                         title="Use Current Location"
                       >
                         {isLocating ? (
@@ -1041,7 +1053,7 @@ export default function DemoPage() {
                         id="origin-suggestions-list"
                         role="listbox"
                         aria-label="Origin address suggestions"
-                        className="absolute z-35 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
+                        className="absolute z-40 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
                       >
                         {originSuggestions.length > 0 ? (
                           originSuggestions.map((s, idx) => (
@@ -1051,13 +1063,7 @@ export default function DemoPage() {
                               role="option"
                               aria-selected={activeOriginIndex === idx}
                               onClick={() => {
-                                setIsOriginSelected(true);
-                                setOriginInput(
-                                  s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim()
-                                );
-                                setOriginCoord(s.coord);
-                                setOriginSuggestions([]);
-                                setShowOriginSuggestions(false);
+                                selectOriginSuggestion(s);
                               }}
                               className={`px-3 py-2 text-[11px] cursor-pointer border-b border-white/[0.03] last:border-0 truncate transition-colors duration-150 ${
                                 activeOriginIndex === idx
@@ -1069,7 +1075,7 @@ export default function DemoPage() {
                             </div>
                           ))
                         ) : (
-                          <div className="px-3 py-2 text-[11px] text-zinc-550 font-mono text-center">
+                          <div className="px-3 py-2 text-[11px] text-zinc-500 font-mono text-center">
                             NO RESULTS FOUND
                           </div>
                         )}
@@ -1145,7 +1151,7 @@ export default function DemoPage() {
                         id="dest-suggestions-list"
                         role="listbox"
                         aria-label="Destination address suggestions"
-                        className="absolute z-35 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
+                        className="absolute z-40 left-0 right-0 mt-1 bg-zinc-950 border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.8)] overflow-hidden max-h-40 overflow-y-auto"
                       >
                         {destSuggestions.length > 0 ? (
                           destSuggestions.map((s, idx) => (
@@ -1155,13 +1161,7 @@ export default function DemoPage() {
                               role="option"
                               aria-selected={activeDestIndex === idx}
                               onClick={() => {
-                                setIsDestSelected(true);
-                                setDestInput(
-                                  s.name.split(",")[0] + ", " + (s.name.split(",")[1] || "").trim()
-                                );
-                                setDestCoord(s.coord);
-                                setDestSuggestions([]);
-                                setShowDestSuggestions(false);
+                                selectDestSuggestion(s);
                               }}
                               className={`px-3 py-2 text-[11px] cursor-pointer border-b border-white/[0.03] last:border-0 truncate transition-colors duration-150 ${
                                 activeDestIndex === idx
@@ -1173,7 +1173,7 @@ export default function DemoPage() {
                             </div>
                           ))
                         ) : (
-                          <div className="px-3 py-2 text-[11px] text-zinc-550 font-mono text-center">
+                          <div className="px-3 py-2 text-[11px] text-zinc-500 font-mono text-center">
                             NO RESULTS FOUND
                           </div>
                         )}
@@ -1275,10 +1275,13 @@ export default function DemoPage() {
               {/* Slider for battery SoC */}
               <div>
                 <div className="flex justify-between text-xs mb-1 font-mono">
-                  <span className="text-zinc-500 uppercase">CURRENT BATTERY</span>
+                  <label htmlFor="battery-soc" className="text-zinc-500 uppercase">
+                    CURRENT BATTERY
+                  </label>
                   <span className="text-white font-bold">{batterySoc}% SoC</span>
                 </div>
                 <input
+                  id="battery-soc"
                   type="range"
                   min={5}
                   max={85}
@@ -1300,6 +1303,8 @@ export default function DemoPage() {
                   {(["normal", "dense", "gridlock"] as const).map((t) => (
                     <button
                       key={t}
+                      type="button"
+                      aria-pressed={trafficSeverity === t}
                       onClick={() => setTrafficSeverity(t)}
                       className={`py-1 rounded-lg text-[10px] font-mono uppercase font-semibold transition-all border ${
                         trafficSeverity === t
@@ -1328,6 +1333,8 @@ export default function DemoPage() {
                   ).map((w) => (
                     <button
                       key={w.id}
+                      type="button"
+                      aria-pressed={weatherStress === w.id}
                       onClick={() => setWeatherStress(w.id)}
                       className={`py-1 rounded-lg text-[10px] font-mono uppercase font-semibold transition-all border ${
                         weatherStress === w.id
@@ -1383,7 +1390,7 @@ export default function DemoPage() {
               origin={originCoord}
               destination={destCoord}
               stations={mappedStations}
-              routeCoordinates={optimizedRouteData?.coordinates || []}
+              routeCoordinates={optimizedRouteData?.coordinates ?? EMPTY_ROUTE}
               selectedStationId={activeStation?.id || null}
               recommendedRankMap={recommendedRankMap}
               onSelectStation={handleSelectStation}
@@ -1485,13 +1492,13 @@ export default function DemoPage() {
                   <button
                     type="button"
                     onClick={() => setDebugMode(true)}
-                    className="text-[9px] font-mono text-zinc-550 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/25 px-1.5 py-0.5 rounded transition-all bg-white/[0.02]"
+                    className="text-[9px] font-mono text-zinc-500 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/25 px-1.5 py-0.5 rounded transition-all bg-white/[0.02]"
                   >
                     [DEBUG]
                   </button>
                 )}
               </div>
-              <span className="text-[10px] font-mono text-zinc-650">
+              <span className="text-[10px] font-mono text-zinc-600">
                 SELECT A STATION TO COMPOSE ROUTE
               </span>
             </div>
@@ -1578,7 +1585,7 @@ export default function DemoPage() {
               timeSavedMinutes={timeSaved}
               reliabilityScore={recommendedStation.reliabilityScore}
               weatherCondition={weatherData?.condition || "Clear"}
-              weatherTempC={weatherData?.tempC || 22}
+              weatherTempC={weatherData?.tempC ?? 22}
               reasons={aiReasons}
               rejectedStations={rejectedStationsLog}
             />
@@ -1596,7 +1603,10 @@ export default function DemoPage() {
               estimatedChargeTime={activeStation.chargingTimeMinutes}
               timeSaved={timeSaved}
               costSaved={costSaved}
-              onStatusChange={(status) => setReservationStatus(status)}
+              pricePerKwh={activeStation.pricePerKwh}
+              batteryCapacityKwh={currentVehicle.capacityKwh}
+              connectorType={activeStation.connectorType}
+              onStatusChange={setReservationStatus}
             />
           )}
         </aside>

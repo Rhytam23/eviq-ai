@@ -21,7 +21,7 @@ interface StatRowProps {
 function StatRow({ label, value, unit, accent, barValue }: StatRowProps) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0">
-      <span className="text-[11px] text-zinc-555 font-medium">{label}</span>
+      <span className="text-[11px] text-zinc-500 font-medium">{label}</span>
       <div className="flex items-center gap-3">
         {barValue !== undefined && (
           <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
@@ -35,7 +35,7 @@ function StatRow({ label, value, unit, accent, barValue }: StatRowProps) {
           className={`text-[12px] font-semibold font-mono tabular-nums ${accent ? "text-cyan-400" : "text-white/80"}`}
         >
           {value}
-          {unit && <span className="text-zinc-650 font-normal"> {unit}</span>}
+          {unit && <span className="text-zinc-600 font-normal"> {unit}</span>}
         </span>
       </div>
     </div>
