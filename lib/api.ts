@@ -31,54 +31,27 @@ export interface ApiChargingStation {
   reliabilityScore?: number;
 }
 
-const FETCH_TIMEOUT_MS = 10000;
-
-// Browser fetch silently drops (or CORS-preflights) a custom User-Agent, so client-side
-// calls to public APIs rely on the browser's own UA. A timeout keeps the UI from hanging.
-function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-}
-
 // Nominatim Geocoding API
 export async function geocodeAddress(query: string): Promise<Coordinate | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
-    const res = await fetchWithTimeout(url);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "EviqAiDemoEnterpriseApplication/1.0",
+      },
+    });
     if (!res.ok) throw new Error("Geocoding failed");
     const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const lat = parseFloat(data[0].lat);
-      const lng = parseFloat(data[0].lon);
-      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+      };
     }
   } catch (err) {
     console.error("Geocoding API error:", err);
   }
   return null;
-}
-
-export interface PlaceSuggestion {
-  name: string;
-  coord: Coordinate;
-}
-
-// Nominatim place search for the address autocomplete
-export async function searchPlaces(
-  query: string,
-  signal?: AbortSignal,
-  limit: number = 4
-): Promise<PlaceSuggestion[]> {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=${limit}`;
-  const res = await fetchWithTimeout(url, { signal });
-  if (!res.ok) throw new Error("Place search failed");
-  const data = await res.json();
-  if (!Array.isArray(data)) return [];
-  return data
-    .map((item: any) => ({
-      name: String(item.display_name ?? ""),
-      coord: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) },
-    }))
-    .filter((p) => p.name && !isNaN(p.coord.lat) && !isNaN(p.coord.lng));
 }
 
 // OSRM Routing Engine
@@ -95,7 +68,7 @@ export async function getRoute(
     coordsPath += `${destination.lng},${destination.lat}`;
 
     const url = `https://router.project-osrm.org/route/v1/driving/${coordsPath}?overview=full&geometries=geojson`;
-    const res = await fetchWithTimeout(url);
+    const res = await fetch(url);
     if (!res.ok) throw new Error("Routing failed");
     const data = await res.json();
     if (data.routes && data.routes.length > 0) {
@@ -120,7 +93,7 @@ export async function getRoute(
 export async function getWeather(lat: number, lng: number): Promise<WeatherData> {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`;
-    const res = await fetchWithTimeout(url);
+    const res = await fetch(url);
     if (!res.ok) throw new Error("Weather query failed");
     const data = await res.json();
     if (data.current_weather) {
@@ -132,7 +105,6 @@ export async function getWeather(lat: number, lng: number): Promise<WeatherData>
       else if (code >= 51 && code <= 67) condition = "Rainy";
       else if (code >= 71 && code <= 77) condition = "Snowy";
       else if (code >= 80 && code <= 82) condition = "Rain Showers";
-      else if (code === 85 || code === 86) condition = "Snow Showers";
       else if (code >= 95) condition = "Thunderstorm";
 
       return {
@@ -151,15 +123,6 @@ export async function getWeather(lat: number, lng: number): Promise<WeatherData>
     windSpeedKph: 12,
     humidity: 50,
   };
-}
-
-// Map Open Charge Map connector titles onto the connector names used by the ranking engine
-function normalizeConnector(title: string): string {
-  if (title.includes("NACS") || title.includes("Tesla")) return "NACS";
-  if (title.includes("CCS")) return title.includes("Type 1") ? "CCS1" : "CCS2";
-  if (title.includes("CHAdeMO")) return "CHAdeMO";
-  if (title.includes("Type 2")) return "Type2";
-  return title;
 }
 
 // Open Charge Map — via server-side proxy at /api/chargers
@@ -188,6 +151,7 @@ export async function getChargingStations(
     });
 
     const proxyUrl = `/api/chargers?${params.toString()}`;
+    console.log(`[OCM Proxy] Page ${page + 1} — ${proxyUrl}`);
 
     let data: any[];
     try {
@@ -197,18 +161,12 @@ export async function getChargingStations(
       });
       if (!res.ok) {
         console.warn(`[OCM Proxy] HTTP ${res.status} on page ${page + 1}. Breaking.`);
-        if (page === 0) {
-          // Surface first-page failures (e.g. missing API key) so the UI can explain them
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? `Charger lookup failed (HTTP ${res.status})`);
-        }
         break;
       }
       const json = await res.json();
       data = Array.isArray(json) ? json : [];
     } catch (err: any) {
       console.warn(`[OCM Proxy] Fetch failed on page ${page + 1}:`, err?.message ?? err);
-      if (page === 0) throw err;
       break;
     }
 
@@ -218,12 +176,13 @@ export async function getChargingStations(
     }
 
     const mappedRaw = data.map((item: any, index: number) => {
-      const connections: any[] = Array.isArray(item.Connections) ? item.Connections : [];
-      // Use the fastest connector as the station's rated power
-      const power = connections.reduce((max, c) => Math.max(max, Number(c?.PowerKW) || 0), 0);
-      const connType = connections[0]?.ConnectionType?.Title ?? "Unknown";
+      const power = item.Connections?.[0]?.PowerKW ?? 0;
+      const connType = item.Connections?.[0]?.ConnectionType?.Title ?? "Unknown";
 
-      const stationIdNum = parseInt(item.ID, 10) || index;
+      // Open Charge Map has no live price, availability or reliability data.
+      // These three values are deterministic estimates derived from the station id
+      // (stable across reloads) and are disclosed as modeled in the demo UI.
+      const stationIdNum = parseInt(item.ID) || index;
       const price = 0.28 + (stationIdNum % 5) * 0.04;
 
       const rawTitle = item.AddressInfo?.Title || "";
@@ -237,8 +196,7 @@ export async function getChargingStations(
         return null;
       }
 
-      // Guard against empty Connections arrays (would make the modulo below NaN)
-      const portsCount = Math.max(1, connections.length || 4);
+      const portsCount = item.Connections?.length ?? 4;
       const portsAvailable = Math.max(1, (stationIdNum % portsCount) + 1);
       const reliabilityScore = 80 + (stationIdNum % 21);
 
@@ -250,7 +208,11 @@ export async function getChargingStations(
         lng,
         address: item.AddressInfo?.AddressLine1 ?? "Unknown Address",
         powerKw: power,
-        connectorType: normalizeConnector(connType),
+        connectorType: connType.includes("NACS")
+          ? "NACS"
+          : connType.includes("CCS")
+            ? "CCS2"
+            : connType,
         pricePerKwh: parseFloat(price.toFixed(2)),
         portsTotal: portsCount,
         portsAvailable,
@@ -264,7 +226,7 @@ export async function getChargingStations(
     let maxId = greaterThanId;
 
     mapped.forEach((st) => {
-      const idNum = parseInt(st.id, 10) || 0;
+      const idNum = parseInt(st.id) || 0;
       if (idNum > maxId) maxId = idNum;
       if (!fetchedIds.has(st.id)) {
         fetchedIds.add(st.id);
@@ -295,7 +257,11 @@ export async function getChargingStations(
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`;
-    const res = await fetchWithTimeout(url);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "EviqAiDemoEnterpriseApplication/1.0",
+      },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data && data.display_name) {
@@ -311,21 +277,4 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     console.error("Reverse geocoding API error:", err);
   }
   return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-}
-
-// OSRM snap road distance helper for verification
-export async function getDistanceToNearestRoad(lat: number, lng: number): Promise<number> {
-  try {
-    const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}`;
-    const res = await fetchWithTimeout(url);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.waypoints && data.waypoints.length > 0) {
-        return data.waypoints[0].distance; // snap distance in meters
-      }
-    }
-  } catch (err) {
-    console.error("[OSRM Nearest] API failed:", err);
-  }
-  return 0; // default fallback snap
 }

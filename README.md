@@ -1,229 +1,108 @@
-# EVIQ AI — The AI Operating System for EV Mobility Intelligence
+# EVIQ AI — AI Decision Layer for EV Charging
 
-[![Verify Build & Code Quality](https://github.com/eviq/eviq-ai/actions/workflows/verify.yml/badge.svg)](https://github.com/eviq/eviq-ai/actions/workflows/verify.yml)
-[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://eviq.ai)
+[![Verify Build & Code Quality](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml/badge.svg)](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-EVIQ AI is the world's AI Operating System for EV Mobility Intelligence. We do not build charging maps, navigation apps, or charging networks. Instead, EVIQ AI serves as the intelligent decision overlay layer sitting above the global charging ecosystem.
+EVIQ AI answers one question for EV drivers and fleets: **where should I charge, when, and why?**
+We do not build a charging map or a charging network. EVIQ is the decision layer on top of
+existing charging data: it ranks chargers along a route using battery state, charger power,
+connector fit, price, availability and expected wait, and explains the pick.
 
 ---
 
-## 🎯 Mission
+## Status: what is real today
 
-**"Eliminate charging anxiety by predicting, explaining, and optimizing every EV charging decision."**
+This is an early prototype. Being precise about it:
 
-EVIQ AI integrates vehicle battery telemetry with live charging operator databases to transform electric mobility from a series of fragmented compromises into an optimized, predictable journey.
+| Capability                                                            | Status                                                   |
+| --------------------------------------------------------------------- | -------------------------------------------------------- |
+| Route planning for any origin/destination (OSRM + Nominatim)          | Live                                                     |
+| Charger discovery along the route corridor (Open Charge Map)          | Live                                                     |
+| Destination weather (Open-Meteo)                                      | Live                                                     |
+| 7-signal charger ranking and arrival-SoC / charge-time model          | Working (heuristic, in `lib/ranking.ts`)                 |
+| Charger price, port availability, reliability, queue times            | **Modeled estimates**, not live operator data            |
+| Reservations                                                          | **Simulated** flow, no operator booking API              |
+| Vehicle telemetry (CAN-bus / OEM APIs), Kafka, TimescaleDB, ML models | Planned, described in [ARCHITECTURE.md](ARCHITECTURE.md) |
 
----
-
-## ⚡ The Problem: The Charging Uncertainty Penalty
-
-The transition to electric mobility is held back by charging anxiety and infrastructure unreliability:
-
-- **Infrastructure Downtime**: Over 20% of public charging ports are offline or broken at any given moment.
-- **Queue Congestion**: EV drivers frequently arrive at charging hubs to find long queues, wasting valuable time.
-- **Battery Degradation**: Unoptimized charging habits and poor thermal management degrade expensive EV batteries prematurely.
-- **Network Fragmentation**: Operating across dozens of incompatible charging networks prevents unified routing and booking.
-
----
-
-## 🧠 The Solution
-
-EVIQ AI answers **"Where SHOULD you charge, WHEN, WHY, and WHAT will happen to your battery if you do?"** It acts as an intelligent router and reservation gateway, predicting queues and locking booking slots before range anxiety arises.
+The landing page "Product Preview", cockpit HUD and decision-engine sections are illustrative
+mockups with sample data. The `/demo` page shows an on-screen notice about which values are modeled.
 
 ---
 
-## 🚀 Key Features
+## The problem
 
-- **AI Mobility Copilot**: A natural language query interface parsing vehicle SoC levels and predicting safe range destinations.
-- **Charging Intelligence Map**: Interactive maps tracing corridors with live queues, speeds, charger reliabilities, and amenities.
-- **Reservation Console**: Book charger ports, lock off-peak tariffs, and sync routing configurations directly to vehicle HUD displays.
-- **Journey Timeline**: High-fidelity progression mapping battery states, range predictions, slot locks, and battery health updates.
-- **Critical Battery Autopilot**: Automatic activation below 20% (Planning Active), 10% (Critical Mode), and 5% (Emergency Mode) to lock safe charging ports automatically.
-
----
-
-## 📸 Screenshots & Demonstrations
-
-_Place screenshots in the `/assets` directory of your repository._
-
-- **Landing Page**: `/assets/screenshot_landing.png`
-- **AI Copilot**: `/assets/screenshot_copilot.png`
-- **Charging Intelligence Map**: `/assets/screenshot_map.png`
-- **Reservation Flow**: `/assets/screenshot_reservation.png`
-- **Architecture Flow**: `/assets/screenshot_architecture.png`
-- **Dashboard Viewport**: `/assets/screenshot_dashboard.png`
+- Public chargers are often offline or derated, and drivers only find out on arrival.
+- Hub queues are not forecast, so drivers arrive blind.
+- Range depends on weather, elevation and temperature, which static apps ignore.
+- Charging networks are fragmented, with no unified decision or booking layer.
 
 ---
 
-## 🗺️ Architecture Overview
+## Tech stack
 
-EVIQ AI is built as a decoupled, event-driven decision pipeline:
+- Next.js 14 (App Router), React 18, TypeScript
+- Tailwind CSS, Framer Motion
+- MapLibre GL for the map
+- Data: Open Charge Map, OSRM, Nominatim (OpenStreetMap), Open-Meteo
 
-```mermaid
-graph TD
-  Vehicle[Vehicle CAN-Bus / Telemetry] -->|1Hz MQTT/WebSockets| Stream[Kafka Event Stream Buffer]
-  Stream -->|Buffer Ingest| TSDB[(TimescaleDB Hypertables)]
-  TSDB -->|State Cache| Models[PyTorch Battery TFT Models]
-  Models -->|Dynamic SoC & Range Forecasts| Optimizer[MPC Recommendation Solver]
-  Optimizer -->|Optimize Stops| Actuate[Smart Reservation API Lock]
-  Actuate -->|Synchronize Reroute| Observe[HUD Cockpit & Fleet Dashboards]
-```
-
-1. **Telemetry Ingest**: Collects battery cell temperatures, voltages, and odometer feeds.
-2. **Buffer Broker**: Buffers streams into partitioned hyper-tables.
-3. **AI Predictors**: Forecasts remaining battery capacities under topographic or thermal stress.
-4. **MPC Solver**: Optimizes stop coordinates evaluating chargers queues, pricing, and uptime.
-5. **Actuator Gateway**: Locks reservations and pushes path updates directly to the in-car HUD.
-
----
-
-## 🛠️ Technology Stack
-
-- **Core**: Next.js 14 (App Router)
-- **Styling**: Vanilla CSS (Tailwind CSS primitives)
-- **Animations**: Framer Motion & HTML5 Canvas
-- **Type Safety**: TypeScript 5.x
-- **Development**: ESLint & Prettier
-
----
-
-## 📂 Project Structure
+## Project structure
 
 ```
-eviq-ai/
-├── app/                  # Next.js page routing, layouts, and styles
-│   ├── demo/             # High-fidelity interactive competition MVP dashboard
-│   ├── globals.css       # Core styling definitions
-│   ├── layout.tsx        # HTML document frame
-│   └── page.tsx          # Marketing landing page
-├── components/           # UI and component modules
-│   ├── architecture/     # Security and technical flow diagrams
-│   ├── dashboard/        # Operational simulations and query terminals
-│   ├── landing/          # Value proposition and marketing layouts
-│   ├── layout/           # Headers, footers, and navigations
-│   └── ui/               # Layout primitives (Container)
-├── lib/                  # Shared helper scripts
-├── types/                # TypeScript EV mobility data models
-├── assets/               # Public images and screenshot assets
-├── vercel.json           # Vercel routing configurations
-└── tsconfig.json         # TypeScript configuration
+app/
+  api/chargers/     Server-side proxy for Open Charge Map (keeps the API key off the client)
+  demo/             Interactive trip-planning demo
+  page.tsx          Landing page
+components/         Landing, demo, layout and architecture components
+lib/
+  api.ts            Geocoding, routing, weather and charger clients
+  ranking.ts        Charger ranking engine
+types/              Shared TypeScript types
 ```
 
----
+## Getting started
 
-## 📦 Getting Started
-
-### 1. Prerequisites
-
-Ensure you have **Node.js (v18.x or later)** and **npm** installed.
-
-### 2. Installation
+Requires Node.js 18.17 or later (Node 20 recommended).
 
 ```bash
-# Clone the repository
-git clone https://github.com/eviq/eviq-ai.git
-
-# Navigate to project directory
+git clone https://github.com/Rhytam23/eviq-ai.git
 cd eviq-ai
-
-# Install dependencies
 npm install
-```
-
-### 3. Run Locally
-
-```bash
+cp .env.example .env.local   # then add your Open Charge Map key
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
----
+### Environment variables
 
-## 🧑‍💻 Development & Verifications
+| Variable      | Required | Description                                                                               |
+| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `OCM_API_KEY` | Yes      | Free key from [Open Charge Map](https://openchargemap.org/site/develop/api). Server-only. |
 
-Always run verification checks before submitting Pull Requests:
+Without the key, the demo loads but shows no chargers. In Vercel, set `OCM_API_KEY` under
+Project Settings, Environment Variables. Do not use a `NEXT_PUBLIC_` prefix.
+
+## Development
 
 ```bash
-# Run ESLint validation
-npm run lint
-
-# Run TypeScript type safety compilation
-npm run typecheck
-
-# Compile Next.js production build
-npm run build
+npm run lint        # ESLint
+npm run typecheck   # TypeScript
+npm run build       # Production build
+npx prettier --check .
 ```
 
----
+CI runs the same checks on every push and pull request.
 
-## 🗺️ Long-Term Roadmap
+## Roadmap
 
-- **Phase 1 (Now)**: Consumer Charging Assistant & Trip Planner Sandbox.
-- **Phase 2 (Q4 2025)**: Fleet Charging Scheduler & Optimization Platform.
-- **Phase 3 (Q2 2026)**: Charging Network Operator OS & Queue Balancer.
-- **Phase 4 (2026)**: Embedded Automotive OEM HUD Integration SDK.
-- **Phase 5 (Long Term)**: Worldwide Smart Charging Grid Virtual Power Plant (VPP) Coordinator.
+1. **Now:** consumer charging assistant and trip-planner prototype.
+2. **Next:** fleet charging scheduler, first real operator and telemetry integrations.
+3. **Later:** operator demand forecasting, OCPP smart-charge control, grid-aware load balancing.
 
----
+## Contact
 
-## 📄 License
+Pilots, partnerships or investment: [founders@eviq.ai](mailto:founders@eviq.ai).
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) to understand linting and build standards.
-
----
-
-## 📬 Contact
-
-For pilots, API licensing, or investment inquiries, contact the founders at [Founder](mailto:2020sumoy@gmail.com).
-
----
-
-## 💬 FAQ
-
-### Is EVIQ AI a charging network or navigation map?
-
-No. EVIQ AI is an intelligence overlay layer. We integrate with existing charging networks (such as ChargePoint, EVgo, Electrify America, Tesla Supercharger) and vehicle battery telemetry to provide predictions and reservation slot locks.
-
-### How does EVIQ AI connect to vehicle telemetry?
-
-EVIQ AI integrates with vehicle CAN-bus data networks via standard OBD-II dongles or direct automotive OEM APIs, streaming state-of-charge (SoC), thermal indexes, and cell voltages at 1Hz frequencies.
-
-### How does EVIQ AI protect battery cell health?
-
-The Battery Intelligence Engine evaluates dynamic charging curves against temperatures and cycle wears, optimizing charge profiles (e.g. capping supercharging sessions at 80% SoC when cells run hot) to prevent capacity loss.
-
-### Can EVIQ AI lock charging reservations across different networks?
-
-Yes, our Reservation Engine handles unified, cross-network API booking locks, allowing drivers to reserve ports across multiple networks in a single unified interface.
-
----
-
-## 📖 Project Understanding (Future Reference)
-
-EVIQ AI positions itself as a decision layer over the existing EV charging ecosystem rather than
-another charging map: it combines vehicle battery telemetry with charging-operator data to
-predict queues, explain charging decisions, and optimize routing/reservations for EV drivers.
-This is the most "product-shaped" repo in your account — it has CI (GitHub Actions), a real
-license, CONTRIBUTING/SECURITY/CODE_OF_CONDUCT docs, and a live Vercel deployment badge.
-
-**Stack:** Next.js 14 + React 18 + MapLibre GL (frontend), deployed on Vercel, MIT licensed.
-**Status:** actively maintained, product-style project with CI and community docs — more mature
-than a typical prototype.
-
-## 🎯 Where This Can Be Used
-
-- Clean-mobility / EV-tech product portfolio centerpiece — this is the repo to point investors,
-  recruiters or judges at first.
-- Reference implementation for "predictive routing + explainable AI decision" UX patterns,
-  reusable in other mobility or logistics problems.
-- **Hackathons:** excellent fit for clean-energy, EV/mobility, or climate-tech tracks — the
-  live map + AI copilot concept demos well on stage, and the existing CI/docs signal seriousness
-  to judges who check the repo.
+MIT, see [LICENSE](LICENSE). Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -124,3 +124,8 @@ THESIS.md
 IMPLEMENTATION_ROADMAP.md
 DESIGN_SYSTEM.md
 gridmind-landing.html
+
+# Local Agent Skills and Planning configurations
+.agents/
+.planning/
+skills-lock.json

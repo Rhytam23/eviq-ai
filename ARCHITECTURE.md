@@ -1,6 +1,8 @@
 # EVIQ AI — Platform Architecture Specification
 
-This document details the system architecture, data models, and engineering pipelines of **EVIQ AI** — the world's AI Operating System for EV Mobility Intelligence.
+> **Status:** this describes the **target architecture**. The current prototype is a Next.js app that combines Open Charge Map, OSRM and Open-Meteo data with a heuristic ranking engine (`lib/ranking.ts`). Kafka, TimescaleDB, the forecasting models and vehicle telemetry ingest are planned, not built.
+
+This document details the intended system architecture, data models, and engineering pipelines of **EVIQ AI**.
 
 EVIQ AI is built as a highly distributed, decoupled platform of modular intelligence engines. Instead of a monolithic navigation app, EVIQ AI serves as an orchestration layer sitting above charging networks, vehicle battery systems, and enterprise fleet managers.
 

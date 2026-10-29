@@ -1,4 +1,3 @@
-import OpeningCinematic from "@/components/landing/OpeningCinematic";
 import Nav from "@/components/layout/Nav";
 import Hero from "@/components/landing/Hero";
 import Problem from "@/components/landing/Problem";
@@ -14,7 +13,6 @@ import Footer from "@/components/layout/Footer";
 export default function Page() {
   return (
     <main className="bg-[#05070B] min-h-screen text-white overflow-x-hidden">
-      <OpeningCinematic />
       <Nav />
       <Hero />
       <Problem />
