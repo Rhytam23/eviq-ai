@@ -1,8 +1,9 @@
 import { haversineKm } from "@/lib/format";
 import type { Connector, ConnectorType, OperatorStatus, ProviderStation } from "@/types/station";
 
-const OCM_URL = "https://api.openchargemap.io/v3/poi/";
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+// Endpoints can be overridden (self-hosted Overpass mirror, or the mock registry used by the e2e tests).
+const ocmUrl = () => process.env.OCM_API_URL || "https://api.openchargemap.io/v3/poi/";
+const overpassUrl = () => process.env.OVERPASS_API_URL || "https://overpass-api.de/api/interpreter";
 const FETCH_TIMEOUT_MS = 12_000;
 const USER_AGENT = "EVIQ/0.3 (+https://eviq.ai)";
 const REVALIDATE_SECONDS = 300;
@@ -170,7 +171,7 @@ export function buildOcmUrl(area: SearchArea): string {
     compact: "false",
     verbose: "false",
   });
-  return `${OCM_URL}?${params.toString()}`;
+  return `${ocmUrl()}?${params.toString()}`;
 }
 
 async function fetchOcm(area: SearchArea, apiKey: string): Promise<ProviderStation[]> {
@@ -286,7 +287,7 @@ export function buildOverpassQuery(area: SearchArea): string {
 }
 
 export function buildOverpassUrl(area: SearchArea): string {
-  return `${OVERPASS_URL}?${new URLSearchParams({ data: buildOverpassQuery(area) }).toString()}`;
+  return `${overpassUrl()}?${new URLSearchParams({ data: buildOverpassQuery(area) }).toString()}`;
 }
 
 async function fetchOsm(area: SearchArea): Promise<ProviderStation[]> {
@@ -339,7 +340,7 @@ export function buildOcmByIdUrl(poiId: string): string {
     compact: "false",
     verbose: "false",
   });
-  return `${OCM_URL}?${params.toString()}`;
+  return `${ocmUrl()}?${params.toString()}`;
 }
 
 export function buildOverpassByIdQuery(kind: "node" | "way" | "relation", id: string): string {
@@ -371,7 +372,7 @@ export async function fetchStationById(
   if (!id.startsWith("osm:") || !kind) return null;
   const query = buildOverpassByIdQuery(kind, id.slice(5));
   const res = await fetchWithRetry(
-    `${OVERPASS_URL}?${new URLSearchParams({ data: query }).toString()}`,
+    `${overpassUrl()}?${new URLSearchParams({ data: query }).toString()}`,
     {
       headers: { Accept: "application/json", "User-Agent": USER_AGENT },
       next: { revalidate: REVALIDATE_SECONDS },

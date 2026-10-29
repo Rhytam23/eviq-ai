@@ -86,6 +86,16 @@ Hypothesis, to be validated with design partners:
 2. **Operator analytics (secondary).** Dashboards for operators showing how drivers see each site.
 3. **Never:** selling individual driver data. We do not collect it.
 
+### Who is the first API customer? (hypothesis, not a fact)
+
+Start with the buyer who feels a failed charge stop most directly and can decide fastest: **a fleet or car-share
+operator that charges every day in the pilot city, and an independent EV trip-planning or routing app.** Both can
+test the API with a few lines of code (`/api/v1/stations`, documented at `/developers`), and neither needs a long
+procurement cycle. Vehicle makers are the larger prize and a much slower sale, so they come second. The test: ask
+10 such buyers what one failed stop costs them and whether a per-charger signal would change a routing decision;
+then offer a free trial in exchange for feedback and a price conversation. **TODO (founder):** the names you will
+actually approach, and what each answers.
+
 ### Who are your competitors? What do you understand that they don't?
 
 Verify each of these yourself before submitting; products change.
@@ -261,8 +271,9 @@ real data; do not stage fake reports.
 5. **Report loop (35 s).** On a real charger you are at, or one you can verify, tap Working or Broken. The
    badge updates immediately. Reload to show it persisted (the "not persisted" warning is absent).
    Try again to show the 10-minute cooldown.
-6. **The business (25 s).** Show `docs` or the landing API section: "This status will be an API." Be explicit
-   that it is planned.
+6. **The business (25 s).** Open `/developers` and run one `curl` against `/api/v1/stations`: "This status is
+   already a free read API in alpha. Keys and paid plans are the next step, and they are not built." Be exact
+   about that.
 7. **Close (10 s).** "Open source, tested rules, working today. <URL>."
 
 ## Pre-submission checklist

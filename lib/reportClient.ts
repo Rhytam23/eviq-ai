@@ -1,7 +1,6 @@
 import type { ReportStatus } from "@/types/station";
 
-export type SubmitResult =
-  { ok: true; storage: "supabase" | "memory" } | { ok: false; message: string };
+type SubmitResult = { ok: true; storage: "supabase" | "memory" } | { ok: false; message: string };
 
 /** Browser-side call to POST /api/reports with friendly error messages. */
 export async function submitReport(stationId: string, status: ReportStatus): Promise<SubmitResult> {

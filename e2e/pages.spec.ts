@@ -153,18 +153,14 @@ test("share page degrades gracefully for an invalid or unreachable charger", asy
   await expect(page.getByRole("heading", { name: "Charger not available" })).toBeVisible();
 });
 
-test.describe("admin metrics", () => {
-  test("requires the token, then shows counters", async ({ page }) => {
-    await page.goto("/admin/metrics");
-    await expect(page.getByLabel("Admin token")).toBeVisible();
+// A successful sign-in is covered in fullstack.spec.ts. The login is rate limited to 5 attempts per 10 minutes
+// per client, so keep the total number of sign-in attempts across the suite at or below that.
+test("admin metrics requires the token", async ({ page }) => {
+  await page.goto("/admin/metrics");
+  await expect(page.getByLabel("Admin token")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reports" })).toHaveCount(0);
 
-    await page.getByLabel("Admin token").fill("wrong-token");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.locator("p[role=alert]")).toContainText("not correct");
-
-    await page.getByLabel("Admin token").fill("e2e-admin-token-0123456789");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { name: "Reports" })).toBeVisible();
-    await expect(page.getByText(/Counters hold no identifiers/)).toBeVisible();
-  });
+  await page.getByLabel("Admin token").fill("wrong-token");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("p[role=alert]")).toContainText("not correct");
 });

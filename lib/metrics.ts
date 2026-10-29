@@ -10,15 +10,17 @@ export const METRIC_NAMES = [
   "share_view",
   "qr_view",
 ] as const;
-export type MetricName = (typeof METRIC_NAMES)[number];
+type MetricName = (typeof METRIC_NAMES)[number];
 
-export interface MetricRow {
+interface MetricRow {
   day: string; // YYYY-MM-DD (UTC)
   name: MetricName;
   count: number;
 }
 
-const memory = new Map<string, number>();
+// On globalThis because Next bundles route handlers and pages separately; module state would not be shared.
+const globalForMetrics = globalThis as unknown as { __eviqMetrics?: Map<string, number> };
+const memory = (globalForMetrics.__eviqMetrics ??= new Map<string, number>());
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);

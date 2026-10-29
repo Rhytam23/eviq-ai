@@ -3,7 +3,7 @@ import { computeReliability } from "@/lib/reliability";
 import { getReportStore, type StorageKind } from "@/lib/reportStore";
 import type { ProviderStation, ReportEvent, Station } from "@/types/station";
 
-export interface StationsResult {
+interface StationsResult {
   stations: Station[];
   source: "ocm" | "osm";
   fallbackReason: string | null;

@@ -2,7 +2,7 @@ import { cache } from "react";
 import { getStation, type StationLookup } from "@/lib/stationService";
 import { isStationId } from "@/lib/validation";
 
-export type ShareLookup =
+type ShareLookup =
   | (StationLookup & { found: true })
   | { found: false; reason: "invalid" | "not-found" | "unavailable" };
 

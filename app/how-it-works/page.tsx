@@ -40,6 +40,7 @@ export default function HowItWorksPage() {
         </p>
 
         <div className="mt-12">
+          <h2 className="mb-6 font-serif text-3xl">The four labels</h2>
           <StatusRules />
         </div>
 

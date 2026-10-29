@@ -25,7 +25,7 @@ interface ReportStore {
   stats(): Promise<ReportStats>;
 }
 
-export interface ReportStats {
+interface ReportStats {
   last24h: number;
   last7d: number;
   distinctClients7d: number;
