@@ -7,6 +7,9 @@ export const BROKEN_WINDOW_HOURS = 48;
 /** Reports older than this are ignored entirely. */
 export const REPORT_RETENTION_HOURS = 72;
 
+/** A client may report the same charger once per this many minutes (enforced server-side). */
+export const COOLDOWN_MINUTES = 10;
+
 const HOUR = 3_600_000;
 
 export interface ReliabilityResult {

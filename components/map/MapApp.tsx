@@ -1,0 +1,500 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Logo from "@/components/Logo";
+import { haversineKm, prefersMiles } from "@/lib/format";
+import { computeReliability } from "@/lib/reliability";
+import { STATUS_COLORS, STATUS_LABELS } from "@/lib/statusMeta";
+import type { Reliability, ReportStatus, Station } from "@/types/station";
+import Filters, { type FilterState } from "./Filters";
+import type { FlyTarget, ViewState } from "./MapView";
+import SearchBox, { type Place } from "./SearchBox";
+import StationDetail, { type ReportUi } from "./StationDetail";
+import StationList from "./StationList";
+
+// MapLibre touches `window`, so it is loaded in the browser only.
+const MapView = dynamic(() => import("./MapView"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-[#EEF0EA]" />,
+});
+
+type GeoState = "locating" | "granted" | "denied" | "unavailable";
+type Sheet = "peek" | "half" | "full";
+
+interface StationsResponse {
+  stations: Station[];
+  source: "ocm" | "osm";
+  fallbackReason: string | null;
+  storage: "supabase" | "memory";
+  reportsAvailable: boolean;
+}
+
+interface SearchOrigin {
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  label: string;
+}
+
+const SOURCE_NAMES = { ocm: "Open Charge Map", osm: "OpenStreetMap" } as const;
+const SHEET_HEIGHT: Record<Sheet, string> = {
+  peek: "h-[132px]",
+  half: "h-[46dvh]",
+  full: "h-[86dvh]",
+};
+const LEGEND: Reliability[] = ["verified", "reported-broken", "operator-offline", "unverified"];
+
+export default function MapApp() {
+  const [geo, setGeo] = useState<GeoState>("locating");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [target, setTarget] = useState<FlyTarget | null>(null);
+  const [view, setView] = useState<ViewState | null>(null);
+
+  const [data, setData] = useState<StationsResponse | null>(null);
+  const [origin, setOrigin] = useState<SearchOrigin | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mapNotice, setMapNotice] = useState<string | null>(null);
+
+  const [filters, setFilters] = useState<FilterState>({ connectors: [], minKw: 0 });
+  const [miles, setMiles] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reportUi, setReportUi] = useState<Record<string, ReportUi>>({});
+  const [sheet, setSheet] = useState<Sheet>("half");
+  const [announce, setAnnounce] = useState("");
+
+  const abortRef = useRef<AbortController | null>(null);
+  const nonce = useRef(0);
+
+  /* ------------------------------- data loading ------------------------------- */
+
+  const search = useCallback(async (next: SearchOrigin) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        lat: next.lat.toFixed(5),
+        lng: next.lng.toFixed(5),
+        radiusKm: String(next.radiusKm),
+      });
+      const res = await fetch(`/api/stations?${params.toString()}`, { signal: controller.signal });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? "Could not load chargers.");
+      setData(json as StationsResponse);
+      setOrigin(next);
+      setSelectedId(null);
+      setReportUi({});
+      setAnnounce(
+        `${(json as StationsResponse).stations.length} chargers found near ${next.label}`
+      );
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      setError(err instanceof Error ? err.message : "Could not load chargers.");
+    } finally {
+      if (abortRef.current === controller) setLoading(false);
+    }
+  }, []);
+
+  const flyTo = useCallback((lat: number, lng: number, zoom: number) => {
+    nonce.current += 1;
+    setTarget({ lat, lng, zoom, nonce: nonce.current });
+  }, []);
+
+  const locate = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      setGeo("unavailable");
+      return;
+    }
+    setGeo("locating");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(here);
+        setGeo("granted");
+        flyTo(here.lat, here.lng, 12);
+        void search({ ...here, radiusKm: 10, label: "your location" });
+      },
+      (err) => setGeo(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
+      { timeout: 10_000, maximumAge: 300_000 }
+    );
+  }, [flyTo, search]);
+
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem("eviq:miles");
+    } catch {
+      /* storage can be blocked; fall back to the locale */
+    }
+    setMiles(stored === null ? prefersMiles(navigator.language) : stored === "1");
+    locate();
+  }, [locate]);
+
+  const changeMiles = (value: boolean) => {
+    setMiles(value);
+    try {
+      localStorage.setItem("eviq:miles", value ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const pickPlace = (place: Place) => {
+    const label = place.name.split(",")[0].trim();
+    flyTo(place.lat, place.lng, 12);
+    void search({ lat: place.lat, lng: place.lng, radiusKm: 10, label });
+  };
+
+  const searchThisArea = () => {
+    if (!view) return;
+    void search({ lat: view.lat, lng: view.lng, radiusKm: view.radiusKm, label: "this area" });
+  };
+
+  /* -------------------------------- derived data ------------------------------ */
+
+  const visible = useMemo(() => {
+    if (!data) return [];
+    return data.stations.filter((s) => {
+      if (
+        filters.connectors.length &&
+        !s.connectors.some((c) => filters.connectors.includes(c.type))
+      ) {
+        return false;
+      }
+      if (filters.minKw > 0 && (s.maxKw ?? 0) < filters.minKw) return false;
+      return true;
+    });
+  }, [data, filters]);
+
+  const selected = visible.find((s) => s.id === selectedId) ?? null;
+  const hiddenByFilters = data ? data.stations.length - visible.length : 0;
+
+  const moved = Boolean(
+    view &&
+    origin &&
+    view.userInitiated &&
+    haversineKm(view.lat, view.lng, origin.lat, origin.lng) > Math.max(0.5, origin.radiusKm * 0.3)
+  );
+  const showSearchArea = moved && !loading;
+  const tooWide = Boolean(view && view.zoom < 9);
+
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    if (id) setSheet((s) => (s === "peek" ? "half" : s));
+  };
+
+  /* --------------------------------- reporting -------------------------------- */
+
+  const report = async (station: Station, status: ReportStatus) => {
+    const snapshot = station;
+    const at = new Date().toISOString();
+    const recent = [{ status, at }, ...station.reports.recent];
+    const { reliability, verifiedAt } = computeReliability(station.operatorStatus, recent);
+    const apply = (s: Station) =>
+      setData((d) => d && { ...d, stations: d.stations.map((x) => (x.id === s.id ? s : x)) });
+
+    apply({ ...station, reports: { recent }, reliability, verifiedAt });
+    setReportUi((m) => ({ ...m, [station.id]: { pending: status } }));
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stationId: station.id, status }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        apply(snapshot);
+        const wait =
+          typeof json.retryAfterSec === "number" ? Math.ceil(json.retryAfterSec / 60) : null;
+        const message =
+          res.status === 429 && wait
+            ? `You already reported this charger. Try again in about ${wait} min.`
+            : (json.error ?? "Could not send your report.");
+        setReportUi((m) => ({ ...m, [station.id]: { error: message } }));
+        setAnnounce(message);
+        return;
+      }
+      setReportUi((m) => ({ ...m, [station.id]: { done: status } }));
+      setAnnounce("Report sent. Thank you.");
+    } catch {
+      apply(snapshot);
+      setReportUi((m) => ({
+        ...m,
+        [station.id]: { error: "Network error. Your report was not sent." },
+      }));
+    }
+  };
+
+  /* ----------------------------------- render ---------------------------------- */
+
+  const sourceName = data ? SOURCE_NAMES[data.source] : null;
+
+  return (
+    <div className="flex h-dvh flex-col md:flex-row">
+      <div className="contents md:flex md:w-[420px] md:shrink-0 md:flex-col md:border-r md:border-line md:bg-surface">
+        <header className="z-10 space-y-3 border-b border-line bg-surface px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Logo />
+            <p className="text-xs text-muted">Driver-verified charger status</p>
+          </div>
+          <SearchBox onPick={pickPlace} onLocate={locate} locating={geo === "locating"} />
+          <Filters
+            filters={filters}
+            onChange={setFilters}
+            miles={miles}
+            onMilesChange={changeMiles}
+          />
+        </header>
+
+        <section
+          aria-label="Chargers"
+          className={`fixed inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl border-t border-line bg-surface shadow-[0_-8px_24px_rgba(20,24,27,0.12)] transition-[height] md:static md:h-auto md:min-h-0 md:flex-1 md:rounded-none md:border-0 md:shadow-none ${SHEET_HEIGHT[sheet]}`}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setSheet((s) => (s === "peek" ? "half" : s === "half" ? "full" : "peek"))
+            }
+            aria-label={`Resize the charger list (currently ${sheet})`}
+            className="grid h-6 shrink-0 place-items-center md:hidden"
+          >
+            <span className="h-1 w-10 rounded-full bg-line" />
+          </button>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {selected && data ? (
+              <StationDetail
+                station={selected}
+                miles={miles}
+                storage={data.storage}
+                reportsAvailable={data.reportsAvailable}
+                reportUi={reportUi[selected.id] ?? {}}
+                onReport={(status) => report(selected, status)}
+                onClose={() => select(null)}
+              />
+            ) : (
+              <ListBody
+                geo={geo}
+                loading={loading}
+                error={error}
+                data={data}
+                origin={origin}
+                visible={visible}
+                hiddenByFilters={hiddenByFilters}
+                selectedId={selectedId}
+                miles={miles}
+                sourceName={sourceName}
+                onSelect={select}
+                onRetryLocate={locate}
+                onRetrySearch={() => origin && search(origin)}
+                onClearFilters={() => setFilters({ connectors: [], minKw: 0 })}
+              />
+            )}
+          </div>
+
+          <footer className="hidden shrink-0 border-t border-line px-4 py-2 text-xs text-muted md:block">
+            Map © CARTO, © OpenStreetMap contributors.{" "}
+            {sourceName ? `Charger data: ${sourceName}. ` : ""}Driver reports © EVIQ users.
+          </footer>
+        </section>
+      </div>
+
+      <main className="relative min-h-0 flex-1" aria-label="Map">
+        <MapView
+          stations={visible}
+          selectedId={selectedId}
+          userLocation={userLocation}
+          target={target}
+          onSelect={select}
+          onViewChange={setView}
+          onUnavailable={setMapNotice}
+        />
+
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-col items-center gap-2 px-3">
+          {showSearchArea && (
+            <button
+              type="button"
+              onClick={searchThisArea}
+              disabled={tooWide}
+              className="pointer-events-auto rounded-full bg-brand px-4 py-2 text-sm font-medium text-white shadow-lg disabled:bg-muted"
+            >
+              {tooWide ? "Zoom in to search this area" : "Search this area"}
+            </button>
+          )}
+          {loading && (
+            <p
+              className="pointer-events-auto rounded-full bg-surface px-3 py-1.5 text-sm shadow"
+              role="status"
+            >
+              Loading chargers…
+            </p>
+          )}
+          {mapNotice && (
+            <p className="pointer-events-auto max-w-md rounded-lg bg-surface px-3 py-2 text-sm text-warn shadow">
+              {mapNotice}
+            </p>
+          )}
+        </div>
+
+        <ul
+          aria-label="Status colours"
+          className="absolute bottom-[calc(132px+0.75rem)] left-3 z-10 hidden gap-x-3 rounded-lg bg-surface/95 px-3 py-2 text-xs shadow min-[420px]:flex min-[420px]:flex-wrap md:bottom-6 md:max-w-[360px]"
+        >
+          {LEGEND.map((s) => (
+            <li key={s} className="flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: STATUS_COLORS[s] }}
+              />
+              {STATUS_LABELS[s]}
+            </li>
+          ))}
+        </ul>
+      </main>
+
+      <p role="status" className="sr-only">
+        {announce}
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------ list / states ------------------------------ */
+
+interface ListBodyProps {
+  geo: GeoState;
+  loading: boolean;
+  error: string | null;
+  data: StationsResponse | null;
+  origin: SearchOrigin | null;
+  visible: Station[];
+  hiddenByFilters: number;
+  selectedId: string | null;
+  miles: boolean;
+  sourceName: string | null;
+  onSelect: (id: string) => void;
+  onRetryLocate: () => void;
+  onRetrySearch: () => void;
+  onClearFilters: () => void;
+}
+
+function Message({ title, children }: { title: string; children?: React.ReactNode }) {
+  return (
+    <div className="px-5 py-8 text-center">
+      <p className="font-serif text-xl">{title}</p>
+      <div className="mt-2 space-y-3 text-sm text-muted">{children}</div>
+    </div>
+  );
+}
+
+function ActionButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-lg bg-brand px-4 py-2 font-medium text-white"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ListBody(p: ListBodyProps) {
+  if (p.error && !p.data) {
+    return (
+      <Message title="We could not load chargers">
+        <p>{p.error}</p>
+        <ActionButton onClick={p.origin ? p.onRetrySearch : p.onRetryLocate}>
+          Try again
+        </ActionButton>
+      </Message>
+    );
+  }
+
+  if (!p.data) {
+    if (p.loading || p.geo === "locating") {
+      return (
+        <Message title="Finding chargers near you">
+          <p>Waiting for your location. You can also search for a city above.</p>
+        </Message>
+      );
+    }
+    if (p.geo === "denied") {
+      return (
+        <Message title="Location is off">
+          <p>
+            Search for a city or address above to see chargers there, or allow location access in
+            your browser.
+          </p>
+          <ActionButton onClick={p.onRetryLocate}>Use my location</ActionButton>
+        </Message>
+      );
+    }
+    return (
+      <Message title="Where do you want to charge?">
+        <p>We could not get your location. Search for a city or address above.</p>
+        <ActionButton onClick={p.onRetryLocate}>Try my location again</ActionButton>
+      </Message>
+    );
+  }
+
+  const { data } = p;
+  return (
+    <>
+      <div className="space-y-1 border-b border-line px-4 py-3 text-sm">
+        <p className="font-medium" aria-live="polite">
+          {p.visible.length} {p.visible.length === 1 ? "charger" : "chargers"} near{" "}
+          {p.origin?.label}
+          {p.hiddenByFilters > 0 && (
+            <span className="font-normal text-muted"> ({p.hiddenByFilters} hidden by filters)</span>
+          )}
+        </p>
+        <p className="text-xs text-muted">
+          Sorted by distance from {p.origin?.label}. Data: {p.sourceName}
+          {data.fallbackReason &&
+            " (Open Charge Map was unavailable, so this is OpenStreetMap data)"}
+          .
+        </p>
+        {data.storage === "memory" && (
+          <p className="rounded-md bg-warn/10 px-2 py-1.5 text-xs text-warn">
+            Reports are not persisted: this server keeps them in memory only.
+          </p>
+        )}
+        {p.error && <p className="text-xs text-bad">{p.error}</p>}
+      </div>
+
+      {p.visible.length === 0 ? (
+        <Message
+          title={
+            data.stations.length === 0 ? "No chargers found here" : "No chargers match your filters"
+          }
+        >
+          {data.stations.length === 0 ? (
+            <p>
+              {p.sourceName} lists none in this area. Coverage differs by region, so this may mean
+              the data is missing, not that there are no chargers. Try zooming out or searching
+              somewhere else.
+            </p>
+          ) : (
+            <>
+              <p>{data.stations.length} chargers are hidden by your connector or power filters.</p>
+              <ActionButton onClick={p.onClearFilters}>Clear filters</ActionButton>
+            </>
+          )}
+        </Message>
+      ) : (
+        <StationList
+          stations={p.visible}
+          selectedId={p.selectedId}
+          miles={p.miles}
+          onSelect={p.onSelect}
+        />
+      )}
+    </>
+  );
+}

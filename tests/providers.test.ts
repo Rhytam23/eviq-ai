@@ -33,7 +33,7 @@ describe("normalizeConnectorType", () => {
 });
 
 describe("normalizeOcm", () => {
-  const pois = ocm as OcmPoi[];
+  const pois = ocm as unknown as OcmPoi[];
 
   it("maps real OCM fields and merges identical connectors", () => {
     const s = normalizeOcm(pois[0], origin)!;
@@ -80,7 +80,7 @@ describe("normalizeOcm", () => {
 });
 
 describe("normalizeOsm", () => {
-  const elements = overpass.elements as OsmElement[];
+  const elements = overpass.elements as unknown as OsmElement[];
 
   it("maps tags, sockets and power", () => {
     const s = normalizeOsm(elements[0], origin)!;

@@ -1,7 +1,6 @@
 import type { ReportEvent, ReportStatus } from "@/types/station";
-import { REPORT_RETENTION_HOURS } from "@/lib/reliability";
+import { COOLDOWN_MINUTES, REPORT_RETENTION_HOURS } from "@/lib/reliability";
 
-export const COOLDOWN_MINUTES = 10;
 /** At most this many recent reports are returned per station. */
 export const MAX_REPORTS_PER_STATION = 20;
 

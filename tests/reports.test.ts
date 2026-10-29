@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { COOLDOWN_MINUTES, createMemoryStore, createSupabaseStore } from "@/lib/reportStore";
+import { createMemoryStore, createSupabaseStore } from "@/lib/reportStore";
+import { COOLDOWN_MINUTES } from "@/lib/reliability";
 import { rateLimit, resetRateLimits } from "@/lib/rateLimit";
 import { hashClient } from "@/lib/clientId";
 import { parseReportBody, parseStationQuery, isStationId } from "@/lib/validation";

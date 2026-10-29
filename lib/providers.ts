@@ -291,7 +291,7 @@ function nearest(stations: ProviderStation[]): ProviderStation[] {
 /** Open Charge Map when a key is configured, OpenStreetMap otherwise (or if OCM fails). */
 export async function fetchStations(
   area: SearchArea,
-  env: { OCM_API_KEY?: string } = process.env
+  env: Record<string, string | undefined> = process.env
 ): Promise<ProviderResult> {
   let fallbackReason: string | null = null;
   if (env.OCM_API_KEY) {
