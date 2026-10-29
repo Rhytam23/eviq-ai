@@ -2,6 +2,7 @@ import { SITE_URL } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import RegisterSw from "@/components/RegisterSw";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const serif = Instrument_Serif({
@@ -36,7 +37,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${serif.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <RegisterSw />
+      </body>
     </html>
   );
 }

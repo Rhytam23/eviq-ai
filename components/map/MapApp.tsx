@@ -289,7 +289,7 @@ export default function MapApp() {
               setSheet((s) => (s === "peek" ? "half" : s === "half" ? "full" : "peek"))
             }
             aria-label={`Resize the charger list (currently ${sheet})`}
-            className="grid h-6 shrink-0 place-items-center md:hidden"
+            className="grid h-11 shrink-0 place-items-center md:hidden"
           >
             <span className="h-1 w-10 rounded-full bg-line" />
           </button>

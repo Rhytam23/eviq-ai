@@ -30,7 +30,7 @@ export default function Faq() {
     <div className="max-w-3xl divide-y divide-line border-y border-line">
       {FAQ.map((f) => (
         <details key={f.q} className="group py-5">
-          <summary className="flex cursor-pointer list-none items-start justify-between gap-6 text-lg font-medium">
+          <summary className="flex min-h-11 cursor-pointer list-none items-start justify-between gap-6 text-lg font-medium">
             {f.q}
             <span
               aria-hidden

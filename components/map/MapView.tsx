@@ -84,6 +84,7 @@ export default function MapView(props: Props) {
     if (!containerRef.current) return;
     let map: maplibregl.Map;
     try {
+      maplibregl.setWorkerUrl(`${window.location.origin}/maplibre/maplibre-gl-worker.mjs`);
       map = new maplibregl.Map({
         container: containerRef.current,
         style: STYLE_URL,

@@ -42,7 +42,8 @@ published rules over operator data and one-tap driver reports (working, broken, 
 
 What exists today: a working web app with a global map, location search, filters, a report loop with
 server-side cooldown and rate limits, persistent storage (once Supabase is configured), and unit-tested
-status rules. The product to be sold to businesses, a reliability API, is **designed but not built**.
+status rules. A free read API (`/api/v1`, alpha, documented in `docs/openapi.yaml`) exists; keys, plans and SLAs, which a paid
+product would need, are **not built**.
 
 ### Why did you pick this idea? / the insight
 
@@ -266,7 +267,7 @@ real data; do not stage fake reports.
 
 ## Pre-submission checklist
 
-- [ ] App deployed on your domain; `/api/stations` reports `"storage": "supabase"`
+- [ ] App deployed on your domain; `/api/v1/stations` reports `"storage": "supabase"` and `/api/health?deep=1` returns 200
 - [ ] Old OCM key revoked; new one in Vercel only; no secrets in git history
 - [ ] `founders@eviq.ai` receives mail; reply within a day
 - [ ] You have real reports in the database, and you know the real numbers to quote

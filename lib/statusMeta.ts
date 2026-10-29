@@ -4,10 +4,10 @@ import type { Reliability, Station } from "@/types/station";
 
 /** Same values as the ok / bad / warn / unknown colours in tailwind.config.ts (MapLibre needs raw hex). */
 export const STATUS_COLORS: Record<Reliability, string> = {
-  verified: "#13804A",
-  "reported-broken": "#C23B22",
-  "operator-offline": "#B26A00",
-  unverified: "#7A848A",
+  verified: "#0F6B3C",
+  "reported-broken": "#B3321B",
+  "operator-offline": "#8A5200",
+  unverified: "#5F6A71",
 };
 
 export const STATUS_LABELS: Record<Reliability, string> = {

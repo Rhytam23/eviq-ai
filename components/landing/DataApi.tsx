@@ -58,7 +58,10 @@ export default function DataApi() {
               Not built yet
             </span>
           </div>
-          <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-paper/90">
+          <pre
+            tabIndex={0}
+            className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-paper/90"
+          >
             {SAMPLE}
           </pre>
         </div>

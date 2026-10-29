@@ -26,3 +26,7 @@ Thumbs.db
 .agents/
 .planning/
 skills-lock.json
+
+# Playwright output
+test-results/
+playwright-report/

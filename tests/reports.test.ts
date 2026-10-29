@@ -57,6 +57,49 @@ describe("memory report store", () => {
   });
 });
 
+describe("report stats and ping", () => {
+  it("summarises the last week without exposing identifiers", async () => {
+    let t = Date.parse("2026-10-01T00:00:00Z");
+    const store = createMemoryStore(() => t);
+    await store.add({ stationId: "ocm:1", status: "working", clientHash: "a" });
+    await store.add({ stationId: "ocm:2", status: "broken", clientHash: "a" });
+    t += 30 * 3_600_000;
+    await store.add({ stationId: "ocm:2", status: "working", clientHash: "b" });
+    const stats = await store.stats();
+    expect(stats).toEqual({
+      last24h: 1,
+      last7d: 3,
+      distinctClients7d: 2,
+      stationsReported7d: 2,
+      truncated: false,
+    });
+    await expect(store.ping()).resolves.toBeUndefined();
+  });
+
+  it("supabase ping and stats call the REST API and flag truncation", async () => {
+    const cfg = { url: "https://example.supabase.co", serviceRoleKey: "k" };
+    const now = () => Date.parse("2026-10-01T12:00:00Z");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("[]", { status: 200 })));
+    await expect(createSupabaseStore(cfg, now).ping()).resolves.toBeUndefined();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("nope", { status: 500 })));
+    await expect(createSupabaseStore(cfg, now).ping()).rejects.toThrow(/500/);
+    const rows = Array.from({ length: 10_000 }, (_, i) => ({
+      station_id: "ocm:1",
+      client_hash: `h${i % 3}`,
+      created_at: "2026-10-01T10:00:00Z",
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(rows), { status: 200 }))
+    );
+    expect(await createSupabaseStore(cfg, now).stats()).toMatchObject({
+      last7d: 10_000,
+      distinctClients7d: 3,
+      truncated: true,
+    });
+  });
+});
+
 describe("supabase report store", () => {
   const config = { url: "https://example.supabase.co/", serviceRoleKey: "service-key" };
   const now = () => Date.parse("2026-10-01T12:00:00Z");

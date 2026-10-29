@@ -14,6 +14,7 @@ Never commit them, paste them in issues or PRs, or prefix a secret with `NEXT_PU
 | `SUPABASE_URL`              | Production: yes. Dev: no     | No (server only)    | Reports are kept in memory and lost on restart; the UI says so.                    |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production: yes. Dev: no     | No (server only)    | Same as above. Must be set together with `SUPABASE_URL`.                           |
 | `REPORT_HASH_SALT`          | Production: strongly advised | No (server only)    | A random per-process salt is used, so cooldowns reset on every restart or deploy.  |
+| `ADMIN_TOKEN`               | No                           | No (server only)    | `/admin/metrics` cannot be opened (sign-in is refused). Nothing else breaks.       |
 | `NEXT_PUBLIC_SITE_URL`      | No                           | Yes (public)        | Metadata, sitemap and robots use `https://eviq.ai`.                                |
 
 "Server only" means the value is read in API routes and never reaches the browser bundle. Only names
@@ -48,7 +49,7 @@ zero-config developer experience.
 ## `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (report storage)
 
 - **What they do:** store driver reports in a Postgres table through Supabase's REST API. Both must be
-  set, otherwise the in-memory store is used. `GET /api/stations` returns `"storage": "supabase"` or
+  set, otherwise the in-memory store is used. `GET /api/v1/stations` returns `"storage": "supabase"` or
   `"memory"` so you can check which one is live.
 - **Create the project:** <https://supabase.com/dashboard> -> **New project**. Choose a region near your
   users and save the database password somewhere safe (the app does not need it).
@@ -74,6 +75,14 @@ zero-config developer experience.
   hashes unmatchable, which only resets cooldowns.
 - **Rotate:** set a new value and redeploy. No data migration needed.
 
+## `ADMIN_TOKEN`
+
+- **What it does:** the password for `/admin/metrics` (report counts, distinct reporters, daily event counters).
+  The page sets an httpOnly cookie derived from the token, so the token itself never sits in the browser.
+- **Generate:** `openssl rand -hex 24`. It must be at least 16 characters or the page refuses all sign-ins.
+- **Rotate:** set a new value and redeploy; existing sessions stop working immediately.
+- The page is not linked from anywhere and is marked `noindex`.
+
 ## `NEXT_PUBLIC_SITE_URL`
 
 Canonical origin without a trailing slash, for example `https://eviq.ai`. Public by design, contains no
@@ -87,8 +96,9 @@ secret. Set it to your preview or production domain if it differs from the defau
    value and tick **Production** and **Preview** (add **Development** only if you use `vercel dev`).
    Mark the secrets as **Sensitive** so they cannot be read back from the dashboard.
 3. **Redeploy:** environment changes only apply to new deployments. **Deployments -> ... -> Redeploy**.
-4. **Verify:** open `https://<your-domain>/api/stations?lat=52.52&lng=13.405&radiusKm=5` and check
-   `"source"` (`ocm` if the key works) and `"storage"` (`supabase`).
+4. **Verify:** open `https://<your-domain>/api/v1/stations?lat=52.52&lng=13.405&radiusKm=5` and check
+   `"source"` (`ocm` if the key works) and `"storage"` (`supabase`), and `https://<your-domain>/api/health?deep=1`
+   which must answer `"reportStore":"reachable"`.
 
 ### Vercel deploy checklist
 
@@ -96,10 +106,11 @@ secret. Set it to your preview or production domain if it differs from the defau
 - [ ] `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set for Production and Preview
 - [ ] `REPORT_HASH_SALT` set (random, 32+ bytes)
 - [ ] `OCM_API_KEY` set (new key; the one from earlier versions revoked)
+- [ ] `ADMIN_TOKEN` set (random, 16+ characters) and you can sign in at `/admin/metrics`
 - [ ] `NEXT_PUBLIC_SITE_URL` set to the real domain
 - [ ] Domain added under **Settings -> Domains**; `founders@eviq.ai` mailbox actually receives mail
-- [ ] Deployment succeeded, `/`, `/map`, `/privacy`, `/opengraph-image` load
-- [ ] `/api/stations?...` shows `"storage": "supabase"`
+- [ ] Deployment succeeded; `/`, `/map`, `/how-it-works`, `/developers`, `/privacy`, `/opengraph-image`, `/manifest.webmanifest` load
+- [ ] `/api/v1/stations?...` shows `"storage": "supabase"` and `/api/health?deep=1` is 200
 - [ ] Submit a test report on a charger; confirm a row appears in **Table Editor -> reports**
 - [ ] Submit the same report again: you get the 10-minute cooldown message
 - [ ] On the map, the "reports are not persisted" warning is **not** shown

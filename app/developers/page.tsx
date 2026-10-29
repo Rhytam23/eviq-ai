@@ -51,7 +51,10 @@ export default function DevelopersPage() {
           {EXAMPLES.map((e) => (
             <div key={e.title}>
               <h2 className="text-sm font-semibold">{e.title}</h2>
-              <pre className="mt-2 overflow-x-auto rounded-xl bg-ink p-4 text-[13px] text-paper">
+              <pre
+                tabIndex={0}
+                className="mt-2 overflow-x-auto rounded-xl bg-ink p-4 text-[13px] text-paper"
+              >
                 <code>{e.code}</code>
               </pre>
             </div>
