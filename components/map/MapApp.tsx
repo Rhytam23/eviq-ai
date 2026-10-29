@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Logo from "@/components/Logo";
-import { haversineKm, prefersMiles } from "@/lib/format";
+import { haversineKm } from "@/lib/format";
 import { computeReliability } from "@/lib/reliability";
 import { STATUS_COLORS, STATUS_LABELS } from "@/lib/statusMeta";
 import type { Reliability, ReportStatus, Station } from "@/types/station";
@@ -12,6 +12,7 @@ import type { FlyTarget, ViewState } from "./MapView";
 import SearchBox, { type Place } from "./SearchBox";
 import StationDetail, { type ReportUi } from "./StationDetail";
 import StationList from "./StationList";
+import { useMiles } from "./useMiles";
 
 // MapLibre touches `window`, so it is loaded in the browser only.
 const MapView = dynamic(() => import("./MapView"), {
@@ -58,7 +59,7 @@ export default function MapApp() {
   const [mapNotice, setMapNotice] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>({ connectors: [], minKw: 0 });
-  const [miles, setMiles] = useState(false);
+  const [miles, changeMiles] = useMiles();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reportUi, setReportUi] = useState<Record<string, ReportUi>>({});
   const [sheet, setSheet] = useState<Sheet>("half");
@@ -104,44 +105,33 @@ export default function MapApp() {
     setTarget({ lat, lng, zoom, nonce: nonce.current });
   }, []);
 
-  const locate = useCallback(() => {
+  /** Asks the browser for a position. State is only set from callbacks, so it is safe to call from an effect. */
+  const requestPosition = useCallback(() => {
     if (!("geolocation" in navigator)) {
-      setGeo("unavailable");
+      void Promise.resolve().then(() => setGeo("unavailable"));
       return;
     }
-    setGeo("locating");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(here);
         setGeo("granted");
         flyTo(here.lat, here.lng, 12);
-        void search({ ...here, radiusKm: 10, label: "your location" });
+        void search({ ...here, radiusKm: 5, label: "your location" });
       },
       (err) => setGeo(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
       { timeout: 10_000, maximumAge: 300_000 }
     );
   }, [flyTo, search]);
 
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = localStorage.getItem("eviq:miles");
-    } catch {
-      /* storage can be blocked; fall back to the locale */
-    }
-    setMiles(stored === null ? prefersMiles(navigator.language) : stored === "1");
-    locate();
-  }, [locate]);
+  const locate = useCallback(() => {
+    setGeo("locating");
+    requestPosition();
+  }, [requestPosition]);
 
-  const changeMiles = (value: boolean) => {
-    setMiles(value);
-    try {
-      localStorage.setItem("eviq:miles", value ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  };
+  useEffect(() => {
+    requestPosition();
+  }, [requestPosition]);
 
   const pickPlace = (place: Place) => {
     const label = place.name.split(",")[0].trim();

@@ -16,12 +16,20 @@ interface Props {
 
 const MIN_INTERVAL_MS = 1100; // Nominatim allows one request per second at most.
 
+let lastRequestAt = 0;
+
+/** Spaces geocoding calls at least MIN_INTERVAL_MS apart, across all SearchBox instances. */
+async function waitForTurn(): Promise<void> {
+  const wait = lastRequestAt + MIN_INTERVAL_MS - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastRequestAt = Date.now();
+}
+
 export default function SearchBox({ onPick, onLocate, locating }: Props) {
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
-  const lastRequest = useRef(0);
   const cache = useRef(new Map<string, Place[]>());
 
   async function submit(e: React.FormEvent) {
@@ -32,9 +40,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
     const cached = cache.current.get(q.toLowerCase());
     if (cached) return show(cached);
 
-    const wait = lastRequest.current + MIN_INTERVAL_MS - Date.now();
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    lastRequest.current = Date.now();
+    await waitForTurn();
 
     setStatus("loading");
     try {

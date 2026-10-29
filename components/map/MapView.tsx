@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import maplibregl, { type GeoJSONSource, type StyleSpecification } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { STATUS_COLORS } from "@/lib/statusMeta";
 import { haversineKm } from "@/lib/format";
@@ -73,7 +74,10 @@ export default function MapView(props: Props) {
   const readyRef = useRef(false);
   const syncRef = useRef<() => void>(() => {});
   const latest = useRef(props);
-  latest.current = props;
+  // Keep the latest props visible to map callbacks without re-creating the map.
+  useEffect(() => {
+    latest.current = props;
+  });
 
   // Create the map once.
   useEffect(() => {
