@@ -2,8 +2,11 @@ export type OperatorStatus = "operational" | "offline" | "unknown";
 export type ReportStatus = "working" | "broken" | "busy";
 export type Reliability = "verified" | "reported-broken" | "operator-offline" | "unverified";
 
+export const CONNECTOR_TYPES = ["CCS", "CHAdeMO", "NACS", "Type 2", "Type 1", "Other"] as const;
+export type ConnectorType = (typeof CONNECTOR_TYPES)[number];
+
 export interface Connector {
-  type: string;
+  type: ConnectorType;
   kw: number | null;
   quantity: number | null;
 }
@@ -37,3 +40,6 @@ export interface Station {
   reliability: Reliability;
   verifiedAt: string | null;
 }
+
+/** What a data provider knows about a station, before driver reports are merged in. */
+export type ProviderStation = Omit<Station, "reports" | "reliability" | "verifiedAt">;

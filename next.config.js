@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    optimizePackageImports: ["framer-motion"],
-  },
-  images: {
-    formats: ["image/avif", "image/webp"],
-  },
+  eslint: { dirs: ["app", "components", "lib", "tests"] },
 };
 module.exports = nextConfig;
