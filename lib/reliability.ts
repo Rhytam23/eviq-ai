@@ -12,7 +12,7 @@ export const COOLDOWN_MINUTES = 10;
 
 const HOUR = 3_600_000;
 
-export interface ReliabilityResult {
+interface ReliabilityResult {
   reliability: Reliability;
   verifiedAt: string | null;
 }

@@ -6,15 +6,15 @@ const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const FETCH_TIMEOUT_MS = 20_000;
 const REVALIDATE_SECONDS = 300;
 
-export const MAX_STATIONS = 200;
+const MAX_STATIONS = 200;
 
-export interface SearchArea {
+interface SearchArea {
   lat: number;
   lng: number;
   radiusKm: number;
 }
 
-export interface ProviderResult {
+interface ProviderResult {
   source: "ocm" | "osm";
   stations: ProviderStation[];
   /** Set when the preferred provider failed and a fallback was used. */

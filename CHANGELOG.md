@@ -1,17 +1,10 @@
-# Changelog — EVIQ AI
+# Changelog
 
-All notable changes to the EVIQ AI project will be documented in this file.
+## Unreleased
 
----
-
-## [1.0.0] - 2026-07-10
-
-### Added
-
-- Initial release of the EVIQ AI Mobility Intelligence Platform.
-- Fully interactive visualizer for EV Charging Stations, Battery Profiles, and Route plans.
-- Live dashboard simulation showing dynamic charging speed curves, queue predictions, and reservation states.
-- AI Assistant preset conversational terminal.
-- Technical architecture SVG diagram mapping our 9-stage pipeline.
-- Target users and target verticals overview grids.
-- Complete documentation suite (Build Bible, Design System, Experience Bible, YC Thesis, Security).
+- Reposition as a driver-verified reliability layer for EV charging.
+- New `/map` product with auto-locate, city search, clustering, filters, one-tap reports.
+- Charger data from Open Charge Map or OpenStreetMap; reports in Supabase or memory.
+- Transparent status rules with unit tests; landing, privacy, OG image, sitemap, robots, 404.
+- Removed the earlier trip-planner demo, modelled price/availability/reliability numbers and the dark HUD landing page.
+- Security: removed a browser-exposed Open Charge Map key (revoke it), upgraded Next.js to 14.2.35.

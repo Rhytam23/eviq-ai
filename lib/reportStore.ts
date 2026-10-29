@@ -2,17 +2,16 @@ import type { ReportEvent, ReportStatus } from "@/types/station";
 import { COOLDOWN_MINUTES, REPORT_RETENTION_HOURS } from "@/lib/reliability";
 
 /** At most this many recent reports are returned per station. */
-export const MAX_REPORTS_PER_STATION = 20;
+const MAX_REPORTS_PER_STATION = 20;
 
 const MINUTE = 60_000;
 const HOUR = 3_600_000;
 
-export type StorageKind = "supabase" | "memory";
+type StorageKind = "supabase" | "memory";
 
-export type AddReportResult =
-  { ok: true } | { ok: false; reason: "cooldown"; retryAfterSec: number };
+type AddReportResult = { ok: true } | { ok: false; reason: "cooldown"; retryAfterSec: number };
 
-export interface ReportStore {
+interface ReportStore {
   kind: StorageKind;
   add(input: {
     stationId: string;

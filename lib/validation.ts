@@ -1,7 +1,7 @@
 import type { ReportStatus } from "@/types/station";
 
-export const MAX_RADIUS_KM = 50;
-export const DEFAULT_RADIUS_KM = 10;
+const MAX_RADIUS_KM = 50;
+const DEFAULT_RADIUS_KM = 10;
 export const MAX_BODY_BYTES = 1024;
 
 const STATION_ID = /^(ocm:\d{1,10}|osm:[nwr]\d{1,15})$/;
@@ -11,11 +11,11 @@ export function isStationId(value: unknown): value is string {
   return typeof value === "string" && STATION_ID.test(value);
 }
 
-export function isReportStatus(value: unknown): value is ReportStatus {
+function isReportStatus(value: unknown): value is ReportStatus {
   return typeof value === "string" && (REPORT_STATUSES as readonly string[]).includes(value);
 }
 
-export interface StationQuery {
+interface StationQuery {
   lat: number;
   lng: number;
   radiusKm: number;

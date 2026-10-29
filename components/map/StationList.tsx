@@ -10,7 +10,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-export function connectorSummary(station: Station): string {
+function connectorSummary(station: Station): string {
   const types = [...new Set(station.connectors.map((c) => c.type))];
   const power = station.maxKw ? `up to ${Math.round(station.maxKw)} kW` : "power unknown";
   return `${types.length ? types.join(", ") : "Connectors unknown"} · ${power}`;

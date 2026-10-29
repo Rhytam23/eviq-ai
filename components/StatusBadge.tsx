@@ -1,7 +1,7 @@
 import { STATUS_LABELS, STATUS_STYLES } from "@/lib/statusMeta";
 import type { Reliability } from "@/types/station";
 
-export function StatusDot({ status, className = "" }: { status: Reliability; className?: string }) {
+function StatusDot({ status, className = "" }: { status: Reliability; className?: string }) {
   return (
     <span
       aria-hidden

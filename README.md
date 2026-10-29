@@ -1,107 +1,101 @@
-# EVIQ AI — AI Decision Layer for EV Charging
+# EVIQ
 
-[![Verify Build & Code Quality](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml/badge.svg)](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml)
+[![Verify](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml/badge.svg)](https://github.com/Rhytam23/eviq-ai/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-EVIQ AI answers one question for EV drivers and fleets: **where should I charge, when, and why?**
-We do not build a charging map or a charging network. EVIQ is the decision layer on top of
-existing charging data: it ranks chargers along a route using battery state, charger power,
-connector fit, price, availability and expected wait, and explains the pick.
+**Know the charger works before you drive there.**
 
----
+EVIQ is a driver-verified reliability layer for EV charging. Open registries (Open Charge Map,
+OpenStreetMap) say a charger exists, not whether it works. EVIQ combines operator/registry status with
+one-tap driver reports (working, broken, busy) that age out, and computes a transparent status for each
+charger, in any city, with no per-city setup.
 
-## Status: what is real today
+The long-term business is selling that reliability data as an API to routing apps, carmakers and fleets.
+The API is **planned, not built**.
 
-This is an early prototype. Being precise about it:
+## What is built today
 
-| Capability                                                            | Status                                                   |
-| --------------------------------------------------------------------- | -------------------------------------------------------- |
-| Route planning for any origin/destination (OSRM + Nominatim)          | Live                                                     |
-| Charger discovery along the route corridor (Open Charge Map)          | Live                                                     |
-| Destination weather (Open-Meteo)                                      | Live                                                     |
-| 7-signal charger ranking and arrival-SoC / charge-time model          | Working (heuristic, in `lib/ranking.ts`)                 |
-| Charger price, port availability, reliability, queue times            | **Modeled estimates**, not live operator data            |
-| Reservations                                                          | **Simulated** flow, no operator booking API              |
-| Vehicle telemetry (CAN-bus / OEM APIs), Kafka, TimescaleDB, ML models | Planned, described in [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Capability                                                                                          | Status                                |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Landing page, privacy page, OG image, sitemap, robots, 404                                          | Built                                 |
+| Live map `/map`: auto-locate, city search, "search this area", clustering, status-coloured markers  | Built                                 |
+| Charger list and detail panel, connector and min-kW filters, km/mi toggle, source shown per station | Built                                 |
+| Charger data from Open Charge Map (with `OCM_API_KEY`) or OpenStreetMap Overpass (no key)           | Built; OSM fallback also if OCM fails |
+| One-tap reports with optimistic update, 10-minute cooldown, IP rate limit, strict validation        | Built                                 |
+| Report storage in Supabase (needs env vars and `supabase/schema.sql`), in-memory fallback for dev   | Built; UI warns when not persisted    |
+| Status rules in `lib/reliability.ts` with unit tests                                                | Built                                 |
+| Price, live availability and queue times                                                            | **Not available.** Shown as "unknown" |
+| Keyed reliability API, per-station history, reporter weighting, station deep links, merged sources  | **Planned**                           |
+| Accounts, reservations, vehicle telemetry, ML forecasting                                           | **Not planned for now**               |
 
-The landing page "Product Preview", cockpit HUD and decision-engine sections are illustrative
-mockups with sample data. The `/demo` page shows an on-screen notice about which values are modeled.
+Nothing in the app is fabricated: where a value is not published by the source, the UI says unknown.
 
----
+## How a status is computed
 
-## The problem
+The newest report decides while it is fresh, otherwise operator data speaks, otherwise we say unverified.
+Windows live in [`lib/reliability.ts`](lib/reliability.ts).
 
-- Public chargers are often offline or derated, and drivers only find out on arrival.
-- Hub queues are not forecast, so drivers arrive blind.
-- Range depends on weather, elevation and temperature, which static apps ignore.
-- Charging networks are fragmented, with no unified decision or booking layer.
+| Label                 | Rule                                                                |
+| --------------------- | ------------------------------------------------------------------- |
+| Reported broken       | Newest driver report is "broken" and under 48 hours old             |
+| Verified working      | Newest driver report is "working" or "busy" and under 24 hours old  |
+| Operator says offline | No fresh report, and the operator or registry data marks it offline |
+| Unverified            | Anything else                                                       |
 
----
+Reports older than 72 hours are ignored.
 
-## Tech stack
+## Quick start
 
-- Next.js 14 (App Router), React 18, TypeScript
-- Tailwind CSS, Framer Motion
-- MapLibre GL for the map
-- Data: Open Charge Map, OSRM, Nominatim (OpenStreetMap), Open-Meteo
-
-## Project structure
-
-```
-app/
-  api/chargers/     Server-side proxy for Open Charge Map (keeps the API key off the client)
-  demo/             Interactive trip-planning demo
-  page.tsx          Landing page
-components/         Landing, demo, layout and architecture components
-lib/
-  api.ts            Geocoding, routing, weather and charger clients
-  ranking.ts        Charger ranking engine
-types/              Shared TypeScript types
-```
-
-## Getting started
-
-Requires Node.js 18.17 or later (Node 20 recommended).
+Requires Node.js 20 (18.17+ works). `next build` downloads Google Fonts, so the build needs network access.
 
 ```bash
 git clone https://github.com/Rhytam23/eviq-ai.git
 cd eviq-ai
 npm install
-cp .env.example .env.local   # then add your Open Charge Map key
-npm run dev
+npm run dev     # http://localhost:3000, no configuration needed
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+With no environment variables the app uses OpenStreetMap data and keeps reports in memory (the UI says so).
+To use Open Charge Map and persistent reports, see [`env/README.md`](env/README.md).
 
-### Environment variables
-
-| Variable      | Required | Description                                                                               |
-| ------------- | -------- | ----------------------------------------------------------------------------------------- |
-| `OCM_API_KEY` | Yes      | Free key from [Open Charge Map](https://openchargemap.org/site/develop/api). Server-only. |
-
-Without the key, the demo loads but shows no chargers. In Vercel, set `OCM_API_KEY` under
-Project Settings, Environment Variables. Do not use a `NEXT_PUBLIC_` prefix.
-
-## Development
+## Commands
 
 ```bash
-npm run lint        # ESLint
-npm run typecheck   # TypeScript
-npm run build       # Production build
+npm run lint
+npm run typecheck
+npm test
+npm run build
 npx prettier --check .
 ```
 
 CI runs the same checks on every push and pull request.
 
-## Roadmap
+## Project structure
 
-1. **Now:** consumer charging assistant and trip-planner prototype.
-2. **Next:** fleet charging scheduler, first real operator and telemetry integrations.
-3. **Later:** operator demand forecasting, OCPP smart-charge control, grid-aware load balancing.
+```
+app/            routes: /, /map, /privacy, api/stations, api/reports, api/geocode
+components/     landing/ and map/ UI, StatusBadge, Logo
+lib/            providers, reliability rules, report store, validation, rate limit, formatting
+supabase/       schema.sql for the reports table
+env/            environment variable docs and template
+docs/YC.md      Y Combinator application pack
+tests/          Vitest tests and fixtures
+```
+
+More detail in [ARCHITECTURE.md](ARCHITECTURE.md). Contributor and agent rules in [AGENTS.md](AGENTS.md).
+
+## Data sources and licences
+
+- [Open Charge Map](https://openchargemap.org) (CC BY 4.0), used when `OCM_API_KEY` is set.
+- [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), via Overpass; city search via Nominatim.
+- Map tiles: CARTO Positron, © CARTO, © OpenStreetMap contributors.
+- Driver reports are EVIQ's own data.
+
+Read the terms of each source before building a commercial product on derived data.
 
 ## Contact
 
-Pilots, partnerships or investment: [founders@eviq.ai](mailto:founders@eviq.ai).
+Pilots, partnerships, API design partners: [founders@eviq.ai](mailto:founders@eviq.ai).
 
 ## License
 

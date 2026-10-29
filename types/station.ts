@@ -16,7 +16,7 @@ export interface ReportEvent {
   at: string; // ISO timestamp
 }
 
-export interface ReportSummary {
+interface ReportSummary {
   /** Reports inside the freshness window, newest first (capped). */
   recent: ReportEvent[];
 }

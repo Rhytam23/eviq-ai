@@ -2,7 +2,7 @@
 
 import { CONNECTOR_TYPES, type ConnectorType } from "@/types/station";
 
-export const MIN_KW_OPTIONS = [0, 7, 22, 50, 150] as const;
+const MIN_KW_OPTIONS = [0, 7, 22, 50, 150] as const;
 const FILTERABLE = CONNECTOR_TYPES.filter((t) => t !== "Other");
 
 export interface FilterState {
