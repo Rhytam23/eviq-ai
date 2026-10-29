@@ -236,10 +236,12 @@ export default function MapApp() {
   return (
     <div className="flex h-dvh flex-col md:flex-row">
       <div className="contents md:flex md:w-[420px] md:shrink-0 md:flex-col md:border-r md:border-line md:bg-surface">
-        <header className="z-10 space-y-3 border-b border-line bg-surface px-4 py-3">
+        <header className="z-10 space-y-2.5 border-b border-line bg-surface px-4 py-3">
           <div className="flex items-center justify-between">
             <Logo />
-            <p className="text-xs text-muted">Driver-verified charger status</p>
+            <p className="hidden text-xs text-muted min-[400px]:block">
+              Driver-verified charger status
+            </p>
           </div>
           <SearchBox onPick={pickPlace} onLocate={locate} locating={geo === "locating"} />
           <Filters
@@ -342,7 +344,7 @@ export default function MapApp() {
 
         <ul
           aria-label="Status colours"
-          className="absolute bottom-[calc(132px+0.75rem)] left-3 z-10 hidden gap-x-3 rounded-lg bg-surface/95 px-3 py-2 text-xs shadow min-[420px]:flex min-[420px]:flex-wrap md:bottom-6 md:max-w-[360px]"
+          className="absolute bottom-6 left-3 z-10 hidden max-w-[360px] flex-wrap gap-x-3 rounded-lg bg-surface/95 px-3 py-2 text-xs shadow md:flex"
         >
           {LEGEND.map((s) => (
             <li key={s} className="flex items-center gap-1.5">

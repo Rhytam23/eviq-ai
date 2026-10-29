@@ -28,7 +28,11 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
 
   return (
     <div className="space-y-2">
-      <div role="group" aria-label="Connector type" className="flex flex-wrap gap-1.5">
+      <div
+        role="group"
+        aria-label="Connector type"
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+      >
         {FILTERABLE.map((type) => {
           const on = filters.connectors.includes(type);
           return (
@@ -48,8 +52,8 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
           );
         })}
       </div>
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <label className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <label className="flex items-center gap-1.5 text-sm">
           <span className="text-muted">Min power</span>
           <select
             value={filters.minKw}
@@ -66,7 +70,7 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
         <div
           role="group"
           aria-label="Distance unit"
-          className="inline-flex overflow-hidden rounded-md border border-line"
+          className="inline-flex overflow-hidden rounded-md border border-line text-sm"
         >
           {[
             { label: "km", value: false },
