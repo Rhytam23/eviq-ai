@@ -46,27 +46,27 @@ export default function Page() {
           <Logo />
           <nav
             aria-label="Sections"
-            className="hidden items-center gap-7 text-sm text-muted md:flex"
+            className="hidden items-center gap-2 text-sm text-muted md:flex"
           >
-            <a className="hover:text-ink" href="#how-it-works">
-              How it works
-            </a>
-            <a className="hover:text-ink" href="#status-rules">
-              Status rules
-            </a>
-            <a className="hover:text-ink" href="#data-and-api">
-              Data and API
-            </a>
-            <a className="hover:text-ink" href="#status">
-              Status
-            </a>
-            <a className="hover:text-ink" href="#faq">
-              FAQ
-            </a>
+            {[
+              ["/#how-it-works", "How it works"],
+              ["/how-it-works", "Status rules"],
+              ["/#data-and-api", "Data and API"],
+              ["/developers", "Developers"],
+              ["/#faq", "FAQ"],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                className="inline-flex min-h-11 items-center px-3 hover:text-ink"
+                href={href}
+              >
+                {label}
+              </a>
+            ))}
           </nav>
           <Link
             href="/map"
-            className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-ink"
+            className="inline-flex min-h-11 items-center rounded-full bg-brand px-4 text-sm font-medium text-white hover:bg-ink"
           >
             Open map
           </Link>
@@ -120,7 +120,7 @@ export default function Page() {
               Four labels. The rules are <em>public</em>.
             </>
           }
-          intro="No score from a model nobody can inspect. Every status is one of four labels, chosen by a short rule you can read, and the same rules run in the code and are tested."
+          intro="No score from a model nobody can inspect. Every status is one of four labels, chosen by a short rule you can read, and the same rules run in the code and are tested. Full rules on the rules page."
         >
           <StatusRules />
         </Section>

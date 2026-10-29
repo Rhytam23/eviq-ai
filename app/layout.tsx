@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
@@ -10,8 +11,6 @@ const serif = Instrument_Serif({
   variable: "--font-serif",
   display: "swap",
 });
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://eviq.ai";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

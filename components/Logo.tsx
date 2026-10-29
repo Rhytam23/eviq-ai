@@ -4,7 +4,7 @@ export default function Logo({ className = "" }: { className?: string }) {
   return (
     <Link
       href="/"
-      className={`inline-flex items-center gap-2 font-semibold tracking-tight ${className}`}
+      className={`inline-flex min-h-11 items-center gap-2 font-semibold tracking-tight ${className}`}
     >
       <span aria-hidden className="grid h-7 w-7 place-items-center rounded-md bg-brand text-volt">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">

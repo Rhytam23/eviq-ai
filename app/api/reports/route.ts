@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordEvent } from "@/lib/metrics";
 import { getReportStore } from "@/lib/reportStore";
 import { clientIp, hashClient, hashIp } from "@/lib/clientId";
 import { rateLimit } from "@/lib/rateLimit";
@@ -58,5 +59,6 @@ export async function POST(request: Request) {
     return fail("Could not save your report. Try again.", 503);
   }
 
+  recordEvent(`report_${parsed.value.status}`);
   return NextResponse.json({ ok: true, storage: store.kind }, { status: 201 });
 }

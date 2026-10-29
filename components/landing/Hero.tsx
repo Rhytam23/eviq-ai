@@ -79,13 +79,13 @@ export default function Hero() {
         <div className="mt-9 flex flex-wrap items-center gap-3">
           <Link
             href="/map"
-            className="rounded-full bg-brand px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-ink"
+            className="inline-flex min-h-12 items-center rounded-full bg-brand px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-ink"
           >
             Open the live map
           </Link>
           <a
             href={MAILTO}
-            className="rounded-full border border-ink/20 px-6 py-3.5 text-base font-medium transition-colors hover:border-ink"
+            className="inline-flex min-h-12 items-center rounded-full border border-ink/20 px-6 py-3.5 text-base font-medium transition-colors hover:border-ink"
           >
             Talk to the founders
           </a>

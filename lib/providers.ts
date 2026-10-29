@@ -3,12 +3,13 @@ import type { Connector, ConnectorType, OperatorStatus, ProviderStation } from "
 
 const OCM_URL = "https://api.openchargemap.io/v3/poi/";
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-const FETCH_TIMEOUT_MS = 20_000;
+const FETCH_TIMEOUT_MS = 12_000;
+const USER_AGENT = "EVIQ/0.3 (+https://eviq.ai)";
 const REVALIDATE_SECONDS = 300;
 
 const MAX_STATIONS = 200;
 
-interface SearchArea {
+export interface SearchArea {
   lat: number;
   lng: number;
   radiusKm: number;
@@ -22,6 +23,29 @@ interface ProviderResult {
 }
 
 /* ---------------------------------- shared ---------------------------------- */
+
+const RETRY_DELAY_MS = 400;
+
+/** One retry on network errors, timeouts, 429 and 5xx. Other statuses are returned as they are. */
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  retries = 1
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if ((res.status === 429 || res.status >= 500) && attempt < retries) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+}
 
 export function normalizeConnectorType(title: string | null | undefined): ConnectorType {
   const t = (title ?? "").toLowerCase();
@@ -95,7 +119,7 @@ function connectionTypeOf(c: OcmConnection): ConnectorType {
 
 export function normalizeOcm(
   poi: OcmPoi,
-  origin: { lat: number; lng: number }
+  origin?: { lat: number; lng: number }
 ): ProviderStation | null {
   const lat = poi.AddressInfo?.Latitude;
   const lng = poi.AddressInfo?.Longitude;
@@ -125,7 +149,7 @@ export function normalizeOcm(
     lat,
     lng,
     address,
-    distanceKm: haversineKm(origin.lat, origin.lng, lat, lng),
+    distanceKm: origin ? haversineKm(origin.lat, origin.lng, lat, lng) : null,
     points: positiveNumber(poi.NumberOfPoints),
     maxKw: maxKwOf(connectors),
     connectors,
@@ -150,9 +174,8 @@ export function buildOcmUrl(area: SearchArea): string {
 }
 
 async function fetchOcm(area: SearchArea, apiKey: string): Promise<ProviderStation[]> {
-  const res = await fetch(buildOcmUrl(area), {
+  const res = await fetchWithRetry(buildOcmUrl(area), {
     headers: { "X-API-Key": apiKey, Accept: "application/json" },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     next: { revalidate: REVALIDATE_SECONDS },
   });
   if (!res.ok) throw new Error(`Open Charge Map responded ${res.status}`);
@@ -202,7 +225,7 @@ export function parseOsmKw(value: string | undefined): number | null {
 
 export function normalizeOsm(
   el: OsmElement,
-  origin: { lat: number; lng: number }
+  origin?: { lat: number; lng: number }
 ): ProviderStation | null {
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
@@ -242,7 +265,7 @@ export function normalizeOsm(
     lat,
     lng,
     address,
-    distanceKm: haversineKm(origin.lat, origin.lng, lat, lng),
+    distanceKm: origin ? haversineKm(origin.lat, origin.lng, lat, lng) : null,
     points: capacity,
     maxKw: maxKwOf(merged),
     connectors: merged,
@@ -267,9 +290,8 @@ export function buildOverpassUrl(area: SearchArea): string {
 }
 
 async function fetchOsm(area: SearchArea): Promise<ProviderStation[]> {
-  const res = await fetch(buildOverpassUrl(area), {
-    headers: { Accept: "application/json", "User-Agent": "EVIQ/0.2 (+https://eviq.ai)" },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  const res = await fetchWithRetry(buildOverpassUrl(area), {
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
     next: { revalidate: REVALIDATE_SECONDS },
   });
   if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
@@ -306,4 +328,57 @@ export async function fetchStations(
     }
   }
   return { source: "osm", stations: nearest(await fetchOsm(area)), fallbackReason };
+}
+
+/* -------------------------------- single station -------------------------------- */
+
+export function buildOcmByIdUrl(poiId: string): string {
+  const params = new URLSearchParams({
+    output: "json",
+    chargepointid: poiId,
+    compact: "false",
+    verbose: "false",
+  });
+  return `${OCM_URL}?${params.toString()}`;
+}
+
+export function buildOverpassByIdQuery(kind: "node" | "way" | "relation", id: string): string {
+  return `[out:json][timeout:25];${kind}(${id});out center tags;`;
+}
+
+const OSM_KINDS = { n: "node", w: "way", r: "relation" } as const;
+
+/**
+ * Looks one station up by its EVIQ id (`ocm:123`, `osm:n456`). Returns null when the registry has no
+ * such station, or for an `ocm:` id when no OCM key is configured. Throws on upstream failure.
+ */
+export async function fetchStationById(
+  id: string,
+  env: Record<string, string | undefined> = process.env
+): Promise<ProviderStation | null> {
+  if (id.startsWith("ocm:")) {
+    if (!env.OCM_API_KEY) return null;
+    const res = await fetchWithRetry(buildOcmByIdUrl(id.slice(4)), {
+      headers: { "X-API-Key": env.OCM_API_KEY, Accept: "application/json" },
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+    if (!res.ok) throw new Error(`Open Charge Map responded ${res.status}`);
+    const data: unknown = await res.json();
+    if (!Array.isArray(data)) throw new Error("Open Charge Map returned an unexpected payload");
+    return data[0] ? normalizeOcm(data[0] as OcmPoi) : null;
+  }
+  const kind = OSM_KINDS[id[4] as keyof typeof OSM_KINDS];
+  if (!id.startsWith("osm:") || !kind) return null;
+  const query = buildOverpassByIdQuery(kind, id.slice(5));
+  const res = await fetchWithRetry(
+    `${OVERPASS_URL}?${new URLSearchParams({ data: query }).toString()}`,
+    {
+      headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+      next: { revalidate: REVALIDATE_SECONDS },
+    }
+  );
+  if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
+  const data = (await res.json()) as { elements?: unknown };
+  if (!Array.isArray(data.elements)) throw new Error("Overpass returned an unexpected payload");
+  return data.elements[0] ? normalizeOsm(data.elements[0] as OsmElement) : null;
 }

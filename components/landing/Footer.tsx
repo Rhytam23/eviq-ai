@@ -13,10 +13,20 @@ export default function Footer() {
         </div>
         <nav aria-label="Product" className="text-sm">
           <p className="font-semibold">Product</p>
-          <ul className="mt-3 space-y-2 text-muted">
+          <ul className="mt-2 text-muted [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center">
             <li>
               <Link className="hover:text-ink" href="/map">
                 Live map
+              </Link>
+            </li>
+            <li>
+              <Link className="hover:text-ink" href="/how-it-works">
+                How statuses work
+              </Link>
+            </li>
+            <li>
+              <Link className="hover:text-ink" href="/developers">
+                Developers and API
               </Link>
             </li>
             <li>
@@ -34,7 +44,10 @@ export default function Footer() {
         <div className="text-sm">
           <p className="font-semibold">Contact</p>
           <p className="mt-3 text-muted">
-            <a className="underline" href="mailto:founders@eviq.ai">
+            <a
+              className="inline-flex min-h-11 items-center underline"
+              href="mailto:founders@eviq.ai"
+            >
               founders@eviq.ai
             </a>
           </p>

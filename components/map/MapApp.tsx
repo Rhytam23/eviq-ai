@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import { haversineKm } from "@/lib/format";
@@ -10,7 +11,9 @@ import type { Reliability, ReportStatus, Station } from "@/types/station";
 import Filters, { type FilterState } from "./Filters";
 import type { FlyTarget, ViewState } from "./MapView";
 import SearchBox, { type Place } from "./SearchBox";
-import StationDetail, { type ReportUi } from "./StationDetail";
+import type { ReportUi } from "@/components/ReportPanel";
+import { submitReport } from "@/lib/reportClient";
+import StationDetail from "./StationDetail";
 import StationList from "./StationList";
 import { useMiles } from "./useMiles";
 
@@ -46,16 +49,48 @@ const SHEET_HEIGHT: Record<Sheet, string> = {
 };
 const LEGEND: Reliability[] = ["verified", "reported-broken", "operator-offline", "unverified"];
 
+interface SearchRequest extends SearchOrigin {
+  /** Increments with every search so stale responses can be told apart. */
+  n: number;
+}
+
+/** `/map?lat=..&lng=..&station=..` opens a shared charger directly. */
+function readDeepLink(
+  params: URLSearchParams
+): { lat: number; lng: number; station: string | null } | null {
+  if (!params.has("lat") || !params.has("lng")) return null;
+  const lat = Number(params.get("lat"));
+  const lng = Number(params.get("lng"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
+    return null;
+  return { lat, lng, station: params.get("station") };
+}
+
 export default function MapApp() {
-  const [geo, setGeo] = useState<GeoState>("locating");
+  const searchParams = useSearchParams();
+  // Read once: the deep link only decides the starting state.
+  const [deepLink] = useState(() => readDeepLink(searchParams));
+  const counter = useRef(deepLink ? 1 : 0);
+  const pendingSelect = useRef<string | null>(deepLink?.station ?? null);
+  const nonce = useRef(deepLink ? 1 : 0);
+
+  const [geo, setGeo] = useState<GeoState>(deepLink ? "granted" : "locating");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [target, setTarget] = useState<FlyTarget | null>(null);
+  const [target, setTarget] = useState<FlyTarget | null>(
+    deepLink ? { lat: deepLink.lat, lng: deepLink.lng, zoom: 15, nonce: 1 } : null
+  );
   const [view, setView] = useState<ViewState | null>(null);
 
+  const [request, setRequest] = useState<SearchRequest | null>(
+    deepLink
+      ? { lat: deepLink.lat, lng: deepLink.lng, radiusKm: 3, label: "the shared charger", n: 1 }
+      : null
+  );
+  const [doneN, setDoneN] = useState(0);
+  const [slowN, setSlowN] = useState(0);
+  const [failure, setFailure] = useState<{ n: number; message: string } | null>(null);
   const [data, setData] = useState<StationsResponse | null>(null);
   const [origin, setOrigin] = useState<SearchOrigin | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [mapNotice, setMapNotice] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>({ connectors: [], minKw: 0 });
@@ -65,39 +100,60 @@ export default function MapApp() {
   const [sheet, setSheet] = useState<Sheet>("half");
   const [announce, setAnnounce] = useState("");
 
-  const abortRef = useRef<AbortController | null>(null);
-  const nonce = useRef(0);
+  const loading = request !== null && doneN !== request.n;
+  const slow = loading && slowN === request?.n;
+  const error = failure && failure.n === request?.n ? failure.message : null;
 
   /* ------------------------------- data loading ------------------------------- */
 
-  const search = useCallback(async (next: SearchOrigin) => {
-    abortRef.current?.abort();
+  useEffect(() => {
+    if (!request) return;
     const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        lat: next.lat.toFixed(5),
-        lng: next.lng.toFixed(5),
-        radiusKm: String(next.radiusKm),
-      });
-      const res = await fetch(`/api/stations?${params.toString()}`, { signal: controller.signal });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error ?? "Could not load chargers.");
-      setData(json as StationsResponse);
-      setOrigin(next);
-      setSelectedId(null);
-      setReportUi({});
-      setAnnounce(
-        `${(json as StationsResponse).stations.length} chargers found near ${next.label}`
-      );
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      setError(err instanceof Error ? err.message : "Could not load chargers.");
-    } finally {
-      if (abortRef.current === controller) setLoading(false);
-    }
+    const slowTimer = setTimeout(() => setSlowN(request.n), 6000);
+    const params = new URLSearchParams({
+      lat: request.lat.toFixed(5),
+      lng: request.lng.toFixed(5),
+      radiusKm: String(request.radiusKm),
+    });
+    (async () => {
+      try {
+        const res = await fetch(`/api/v1/stations?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error ?? "Could not load chargers.");
+        const result = json as StationsResponse;
+        setData(result);
+        setOrigin({
+          lat: request.lat,
+          lng: request.lng,
+          radiusKm: request.radiusKm,
+          label: request.label,
+        });
+        const wanted = pendingSelect.current;
+        pendingSelect.current = null;
+        setSelectedId(wanted && result.stations.some((s) => s.id === wanted) ? wanted : null);
+        setReportUi({});
+        setAnnounce(`${result.stations.length} chargers found near ${request.label}`);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setFailure({
+          n: request.n,
+          message: err instanceof Error ? err.message : "Could not load chargers.",
+        });
+      } finally {
+        if (!controller.signal.aborted) setDoneN(request.n);
+      }
+    })();
+    return () => {
+      clearTimeout(slowTimer);
+      controller.abort();
+    };
+  }, [request]);
+
+  const search = useCallback((next: SearchOrigin) => {
+    counter.current += 1;
+    setRequest({ ...next, n: counter.current });
   }, []);
 
   const flyTo = useCallback((lat: number, lng: number, zoom: number) => {
@@ -117,7 +173,7 @@ export default function MapApp() {
         setUserLocation(here);
         setGeo("granted");
         flyTo(here.lat, here.lng, 12);
-        void search({ ...here, radiusKm: 5, label: "your location" });
+        search({ ...here, radiusKm: 5, label: "your location" });
       },
       (err) => setGeo(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
       { timeout: 10_000, maximumAge: 300_000 }
@@ -130,18 +186,18 @@ export default function MapApp() {
   }, [requestPosition]);
 
   useEffect(() => {
-    requestPosition();
-  }, [requestPosition]);
+    if (!deepLink) requestPosition();
+  }, [deepLink, requestPosition]);
 
   const pickPlace = (place: Place) => {
     const label = place.name.split(",")[0].trim();
     flyTo(place.lat, place.lng, 12);
-    void search({ lat: place.lat, lng: place.lng, radiusKm: 10, label });
+    search({ lat: place.lat, lng: place.lng, radiusKm: 10, label });
   };
 
   const searchThisArea = () => {
     if (!view) return;
-    void search({ lat: view.lat, lng: view.lng, radiusKm: view.radiusKm, label: "this area" });
+    search({ lat: view.lat, lng: view.lng, radiusKm: view.radiusKm, label: "this area" });
   };
 
   /* -------------------------------- derived data ------------------------------ */
@@ -189,34 +245,15 @@ export default function MapApp() {
 
     apply({ ...station, reports: { recent }, reliability, verifiedAt });
     setReportUi((m) => ({ ...m, [station.id]: { pending: status } }));
-    try {
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stationId: station.id, status }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        apply(snapshot);
-        const wait =
-          typeof json.retryAfterSec === "number" ? Math.ceil(json.retryAfterSec / 60) : null;
-        const message =
-          res.status === 429 && wait
-            ? `You already reported this charger. Try again in about ${wait} min.`
-            : (json.error ?? "Could not send your report.");
-        setReportUi((m) => ({ ...m, [station.id]: { error: message } }));
-        setAnnounce(message);
-        return;
-      }
-      setReportUi((m) => ({ ...m, [station.id]: { done: status } }));
-      setAnnounce("Report sent. Thank you.");
-    } catch {
+    const result = await submitReport(station.id, status);
+    if (!result.ok) {
       apply(snapshot);
-      setReportUi((m) => ({
-        ...m,
-        [station.id]: { error: "Network error. Your report was not sent." },
-      }));
+      setReportUi((m) => ({ ...m, [station.id]: { error: result.message } }));
+      setAnnounce(result.message);
+      return;
     }
+    setReportUi((m) => ({ ...m, [station.id]: { done: status } }));
+    setAnnounce("Report sent. Thank you.");
   };
 
   /* ----------------------------------- render ---------------------------------- */
@@ -272,6 +309,7 @@ export default function MapApp() {
               <ListBody
                 geo={geo}
                 loading={loading}
+                slow={slow}
                 error={error}
                 data={data}
                 origin={origin}
@@ -282,7 +320,8 @@ export default function MapApp() {
                 sourceName={sourceName}
                 onSelect={select}
                 onRetryLocate={locate}
-                onRetrySearch={() => origin && search(origin)}
+                canRetrySearch={request !== null}
+                onRetrySearch={() => request && search(request)}
                 onClearFilters={() => setFilters({ connectors: [], minKw: 0 })}
               />
             )}
@@ -322,7 +361,7 @@ export default function MapApp() {
               className="pointer-events-auto rounded-full bg-surface px-3 py-1.5 text-sm shadow"
               role="status"
             >
-              Loading chargers…
+              {slow ? "Still loading: the registry is slow right now…" : "Loading chargers…"}
             </p>
           )}
           {mapNotice && (
@@ -361,6 +400,7 @@ export default function MapApp() {
 interface ListBodyProps {
   geo: GeoState;
   loading: boolean;
+  slow: boolean;
   error: string | null;
   data: StationsResponse | null;
   origin: SearchOrigin | null;
@@ -371,6 +411,7 @@ interface ListBodyProps {
   sourceName: string | null;
   onSelect: (id: string) => void;
   onRetryLocate: () => void;
+  canRetrySearch: boolean;
   onRetrySearch: () => void;
   onClearFilters: () => void;
 }
@@ -412,7 +453,11 @@ function ListBody(p: ListBodyProps) {
     if (p.loading || p.geo === "locating") {
       return (
         <Message title="Finding chargers near you">
-          <p>Waiting for your location. You can also search for a city above.</p>
+          <p>
+            {p.slow
+              ? "This is taking longer than usual: the charger registry is slow right now. You can keep waiting or search somewhere else."
+              : "Waiting for your location. You can also search for a city above."}
+          </p>
         </Message>
       );
     }

@@ -87,12 +87,12 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
           }}
           placeholder="Search a city or address"
           autoComplete="off"
-          className="min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2.5 text-base placeholder:text-muted/70 md:text-sm"
+          className="min-w-0 flex-1 min-h-11 rounded-lg border border-line bg-white px-3 text-base placeholder:text-muted/70 md:text-sm"
         />
         <button
           type="submit"
           disabled={status === "loading" || query.trim().length < 2}
-          className="rounded-lg bg-brand px-4 text-sm font-medium text-white disabled:opacity-50"
+          className="min-h-11 rounded-lg bg-brand px-4 text-sm font-medium text-white disabled:opacity-50"
         >
           {status === "loading" ? "Searching" : "Search"}
         </button>
@@ -102,7 +102,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
           disabled={locating}
           aria-label="Use my location"
           title="Use my location"
-          className="grid w-11 shrink-0 place-items-center rounded-lg border border-line bg-white text-brand disabled:opacity-50"
+          className="grid min-h-11 w-11 shrink-0 place-items-center rounded-lg border border-line bg-white text-brand disabled:opacity-50"
         >
           <svg
             viewBox="0 0 24 24"
@@ -129,7 +129,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
               <button
                 type="button"
                 onClick={() => pick(p)}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-paper focus-visible:bg-paper"
+                className="block min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-paper focus-visible:bg-paper"
               >
                 {p.name}
               </button>

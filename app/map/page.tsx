@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import MapApp from "@/components/map/MapApp";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function MapPage() {
-  return <MapApp />;
+  return (
+    <Suspense>
+      <MapApp />
+    </Suspense>
+  );
 }

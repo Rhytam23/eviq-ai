@@ -1,16 +1,10 @@
 "use client";
 
 import StatusBadge from "@/components/StatusBadge";
-import { COOLDOWN_MINUTES } from "@/lib/reliability";
+import ReportPanel, { type ReportUi } from "@/components/ReportPanel";
 import { formatDistance, timeAgo } from "@/lib/format";
 import { STATUS_RULES, operatorLine, statusHeadline } from "@/lib/statusMeta";
 import type { ReportStatus, Station } from "@/types/station";
-
-export interface ReportUi {
-  pending?: ReportStatus;
-  done?: ReportStatus;
-  error?: string;
-}
 
 interface Props {
   station: Station;
@@ -21,12 +15,6 @@ interface Props {
   onReport: (status: ReportStatus) => void;
   onClose: () => void;
 }
-
-const ACTIONS: { status: ReportStatus; label: string; hint: string }[] = [
-  { status: "working", label: "Working", hint: "I charged here" },
-  { status: "broken", label: "Broken", hint: "It would not charge" },
-  { status: "busy", label: "Busy", hint: "All bays in use" },
-];
 
 function sourceLink(station: Station): { label: string; href: string } {
   if (station.source === "ocm") {
@@ -52,15 +40,13 @@ export default function StationDetail({
   onClose,
 }: Props) {
   const source = sourceLink(station);
-  const busy = Boolean(reportUi.pending);
-  const locked = busy || Boolean(reportUi.done);
 
   return (
     <article className="px-4 pb-6 pt-3" aria-label={`Details for ${station.name}`}>
       <button
         type="button"
         onClick={onClose}
-        className="mb-3 inline-flex items-center gap-1 text-sm text-brand underline-offset-2 hover:underline"
+        className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm text-brand underline-offset-2 hover:underline"
       >
         <span aria-hidden>←</span> Back to list
       </button>
@@ -78,54 +64,14 @@ export default function StationDetail({
       <p className="mt-2 text-sm text-muted">{operatorLine(station)}</p>
       <p className="mt-1 text-sm text-muted">Why: {STATUS_RULES[station.reliability]}</p>
 
-      <section className="mt-5" aria-labelledby="report-heading">
-        <h3 id="report-heading" className="text-sm font-semibold">
-          Was it working when you got here?
-        </h3>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {ACTIONS.map((a) => {
-            const chosen = reportUi.done === a.status || reportUi.pending === a.status;
-            return (
-              <button
-                key={a.status}
-                type="button"
-                disabled={locked}
-                aria-pressed={chosen}
-                onClick={() => onReport(a.status)}
-                className={`rounded-lg border px-2 py-3 text-center disabled:cursor-not-allowed ${
-                  chosen
-                    ? "border-brand bg-brand text-white"
-                    : "border-line bg-white hover:border-brand disabled:opacity-50"
-                }`}
-              >
-                <span className="block text-sm font-semibold">{a.label}</span>
-                <span className="block text-xs opacity-80">{a.hint}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div aria-live="polite" className="mt-2 text-sm">
-          {reportUi.pending && <p className="text-muted">Sending…</p>}
-          {reportUi.done && (
-            <p className="text-ok">
-              Thanks, your report is in. You can report this charger again in {COOLDOWN_MINUTES}{" "}
-              minutes.
-            </p>
-          )}
-          {reportUi.error && <p className="text-bad">{reportUi.error}</p>}
-        </div>
-        {storage === "memory" && (
-          <p className="mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">
-            Reports are not persisted on this server: they are kept in memory and lost on restart.
-            Set the Supabase variables to store them.
-          </p>
-        )}
-        {!reportsAvailable && (
-          <p className="mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">
-            Driver reports could not be loaded just now, so statuses show operator data only.
-          </p>
-        )}
-      </section>
+      <div className="mt-5">
+        <ReportPanel
+          ui={reportUi}
+          storage={storage}
+          reportsAvailable={reportsAvailable}
+          onReport={onReport}
+        />
+      </div>
 
       <section className="mt-5" aria-labelledby="specs-heading">
         <h3 id="specs-heading" className="text-sm font-semibold">
@@ -185,10 +131,24 @@ export default function StationDetail({
           href={`https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg bg-brand px-4 py-2 font-medium text-white"
+          className="inline-flex min-h-11 items-center rounded-lg bg-brand px-4 font-medium text-white"
         >
           Get directions
         </a>
+        <p className="flex flex-wrap gap-x-4 text-muted">
+          <a
+            href={`/s/${encodeURIComponent(station.id)}`}
+            className="inline-flex min-h-11 items-center underline"
+          >
+            Share page
+          </a>
+          <a
+            href={`/qr/${encodeURIComponent(station.id)}`}
+            className="inline-flex min-h-11 items-center underline"
+          >
+            QR sticker
+          </a>
+        </p>
         <p className="text-muted">
           Source:{" "}
           <a href={source.href} target="_blank" rel="noopener noreferrer" className="underline">

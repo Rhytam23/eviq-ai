@@ -27,3 +27,30 @@ revoke all on public.reports from anon, authenticated;
 -- Optional housekeeping: the app ignores reports older than 72 hours. To keep the table small,
 -- delete old rows on a schedule (Dashboard -> Integrations -> Cron, or pg_cron):
 --   delete from public.reports where created_at < now() - interval '30 days';
+
+-- ---------------------------------------------------------------------------------------------
+-- Privacy-friendly product metrics: one counter per (day, event name). No identifiers.
+-- Written through the increment_metric function by the server (service role) only.
+create table if not exists public.metrics (
+  day   date   not null,
+  name  text   not null check (name ~ '^[a-z_]{1,40}$'),
+  count bigint not null default 0,
+  primary key (day, name)
+);
+
+alter table public.metrics enable row level security;
+revoke all on public.metrics from anon, authenticated;
+
+create or replace function public.increment_metric(p_name text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.metrics (day, name, count)
+  values ((now() at time zone 'utc')::date, p_name, 1)
+  on conflict (day, name) do update set count = public.metrics.count + 1;
+$$;
+
+revoke all on function public.increment_metric(text) from public, anon, authenticated;
+grant execute on function public.increment_metric(text) to service_role;

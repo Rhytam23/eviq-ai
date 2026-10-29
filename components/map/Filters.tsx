@@ -41,7 +41,7 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
               type="button"
               aria-pressed={on}
               onClick={() => toggle(type)}
-              className={`rounded-full border px-3 py-1 text-sm ${
+              className={`min-h-11 shrink-0 rounded-full border px-4 text-sm ${
                 on
                   ? "border-brand bg-brand text-white"
                   : "border-line bg-white text-ink hover:border-brand"
@@ -58,7 +58,7 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
           <select
             value={filters.minKw}
             onChange={(e) => onChange({ ...filters, minKw: Number(e.target.value) })}
-            className="rounded-md border border-line bg-white px-2 py-1"
+            className="min-h-11 rounded-md border border-line bg-white px-2"
           >
             {MIN_KW_OPTIONS.map((kw) => (
               <option key={kw} value={kw}>
@@ -81,7 +81,7 @@ export default function Filters({ filters, onChange, miles, onMilesChange }: Pro
               type="button"
               aria-pressed={miles === u.value}
               onClick={() => onMilesChange(u.value)}
-              className={`px-3 py-1 ${miles === u.value ? "bg-brand text-white" : "bg-white"}`}
+              className={`min-h-11 min-w-11 px-3 ${miles === u.value ? "bg-brand text-white" : "bg-white"}`}
             >
               {u.label}
             </button>

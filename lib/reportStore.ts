@@ -7,7 +7,7 @@ const MAX_REPORTS_PER_STATION = 20;
 const MINUTE = 60_000;
 const HOUR = 3_600_000;
 
-type StorageKind = "supabase" | "memory";
+export type StorageKind = "supabase" | "memory";
 
 type AddReportResult = { ok: true } | { ok: false; reason: "cooldown"; retryAfterSec: number };
 
@@ -19,6 +19,36 @@ interface ReportStore {
     clientHash: string;
   }): Promise<AddReportResult>;
   recent(stationIds: string[]): Promise<Map<string, ReportEvent[]>>;
+  /** Throws if the store cannot be reached. */
+  ping(): Promise<void>;
+  /** Aggregate numbers for the admin page. No identifiers leave the store. */
+  stats(): Promise<ReportStats>;
+}
+
+export interface ReportStats {
+  last24h: number;
+  last7d: number;
+  distinctClients7d: number;
+  stationsReported7d: number;
+  /** True when more rows existed than were counted, so the numbers are lower bounds. */
+  truncated: boolean;
+}
+
+const STATS_ROW_LIMIT = 10_000;
+
+function summarise(
+  rows: { stationId: string; clientHash: string; at: string }[],
+  now: number,
+  truncated: boolean
+): ReportStats {
+  const day = now - 24 * HOUR;
+  return {
+    last24h: rows.filter((r) => Date.parse(r.at) >= day).length,
+    last7d: rows.length,
+    distinctClients7d: new Set(rows.map((r) => r.clientHash)).size,
+    stationsReported7d: new Set(rows.map((r) => r.stationId)).size,
+    truncated,
+  };
 }
 
 /* ----------------------------------- memory ----------------------------------- */
@@ -65,6 +95,12 @@ export function createMemoryStore(now: () => number = Date.now): ReportStore {
         out.set(r.stationId, list);
       }
       return out;
+    },
+    async ping() {},
+    async stats() {
+      const t = now();
+      const week = rows.filter((r) => t - Date.parse(r.at) < 7 * 24 * HOUR);
+      return summarise(week, t, false);
     },
   };
 }
@@ -154,6 +190,33 @@ export function createSupabaseStore(
         out.set(r.station_id, list);
       }
       return out;
+    },
+    async ping() {
+      const res = await request(
+        `${base}?${new URLSearchParams({ select: "id", limit: "1" }).toString()}`
+      );
+      if (!res.ok) throw new Error(`Supabase ping failed (${res.status})`);
+    },
+    async stats() {
+      const since = new Date(now() - 7 * 24 * HOUR).toISOString();
+      const query = new URLSearchParams({
+        select: "station_id,client_hash,created_at",
+        created_at: `gte.${since}`,
+        order: "created_at.desc",
+        limit: String(STATS_ROW_LIMIT),
+      });
+      const res = await request(`${base}?${query.toString()}`);
+      if (!res.ok) throw new Error(`Supabase stats failed (${res.status})`);
+      const data = (await res.json()) as {
+        station_id: string;
+        client_hash: string;
+        created_at: string;
+      }[];
+      return summarise(
+        data.map((r) => ({ stationId: r.station_id, clientHash: r.client_hash, at: r.created_at })),
+        now(),
+        data.length >= STATS_ROW_LIMIT
+      );
     },
   };
 }
