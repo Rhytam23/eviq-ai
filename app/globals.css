@@ -167,3 +167,31 @@ body {
     transform: none;
   }
 }
+
+@keyframes pin-state {
+  0%,
+  30% {
+    background: #0f6b3c;
+  }
+  33%,
+  63% {
+    background: #b3321b;
+  }
+  66%,
+  96% {
+    background: #8a5200;
+  }
+  100% {
+    background: #0f6b3c;
+  }
+}
+.pin-dot {
+  background: #0f6b3c;
+  animation: pin-state 9s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-dot {
+    animation: none;
+  }
+}

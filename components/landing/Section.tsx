@@ -3,6 +3,7 @@ import Reveal from "@/components/Reveal";
 export default function Section({
   id,
   number,
+  label,
   title,
   intro,
   children,
@@ -10,6 +11,7 @@ export default function Section({
 }: {
   id: string;
   number: string;
+  label?: string;
   title: React.ReactNode;
   intro?: React.ReactNode;
   children: React.ReactNode;
@@ -27,7 +29,7 @@ export default function Section({
           <p
             className={`text-xs font-semibold uppercase tracking-[0.18em] ${dark ? "text-volt" : "text-brand"}`}
           >
-            {number} &mdash; {id.replace(/-/g, " ")}
+            {number} &mdash; {label ?? id.replace(/-/g, " ")}
           </p>
           <h2
             id={`${id}-title`}

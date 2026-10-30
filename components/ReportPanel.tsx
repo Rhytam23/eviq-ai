@@ -1,5 +1,7 @@
 "use client";
 
+import { useLang } from "@/components/useLang";
+import { t, type Key } from "@/lib/i18n";
 import { COOLDOWN_MINUTES } from "@/lib/reliability";
 import type { ReportStatus } from "@/types/station";
 
@@ -9,10 +11,10 @@ export interface ReportUi {
   error?: string;
 }
 
-const ACTIONS: { status: ReportStatus; label: string; hint: string }[] = [
-  { status: "working", label: "Working", hint: "I charged here" },
-  { status: "broken", label: "Broken", hint: "It would not charge" },
-  { status: "busy", label: "Busy", hint: "All bays in use" },
+const ACTIONS: { status: ReportStatus; label: Key; hint: Key }[] = [
+  { status: "working", label: "working", hint: "workingHint" },
+  { status: "broken", label: "broken", hint: "brokenHint" },
+  { status: "busy", label: "busy", hint: "busyHint" },
 ];
 
 interface Props {
@@ -24,11 +26,12 @@ interface Props {
 
 /** The three one-tap report buttons plus their feedback and storage notices. */
 export default function ReportPanel({ ui, storage, reportsAvailable, onReport }: Props) {
+  const [lang] = useLang();
   const locked = Boolean(ui.pending) || Boolean(ui.done);
   return (
     <section aria-labelledby="report-heading">
       <h3 id="report-heading" className="text-sm font-semibold">
-        Was it working when you got here?
+        {t(lang, "reportHeading")}
       </h3>
       <div className="mt-2 grid grid-cols-3 gap-2">
         {ACTIONS.map((a) => {
@@ -46,31 +49,25 @@ export default function ReportPanel({ ui, storage, reportsAvailable, onReport }:
                   : "border-line bg-white hover:border-brand disabled:opacity-50"
               }`}
             >
-              <span className="block text-sm font-semibold">{a.label}</span>
-              <span className="block text-xs opacity-80">{a.hint}</span>
+              <span className="block text-sm font-semibold">{t(lang, a.label)}</span>
+              <span className="block text-xs opacity-80">{t(lang, a.hint)}</span>
             </button>
           );
         })}
       </div>
       <div aria-live="polite" className="mt-2 text-sm">
-        {ui.pending && <p className="text-muted">Sending…</p>}
-        {ui.done && (
-          <p className="text-ok">
-            Thanks, your report is in. You can report this charger again in {COOLDOWN_MINUTES}{" "}
-            minutes.
-          </p>
-        )}
+        {ui.pending && <p className="text-muted">{t(lang, "sending")}</p>}
+        {ui.done && <p className="text-ok">{t(lang, "thanks", { n: COOLDOWN_MINUTES })}</p>}
         {ui.error && <p className="text-bad">{ui.error}</p>}
       </div>
       {storage === "memory" && (
         <p className="mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">
-          Reports are not persisted on this server: they are kept in memory and lost on restart. Set
-          the Supabase variables to store them.
+          {t(lang, "memoryNotice")}
         </p>
       )}
       {!reportsAvailable && (
         <p className="mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">
-          Driver reports could not be loaded just now, so statuses show operator data only.
+          {t(lang, "reportsUnavailable")}
         </p>
       )}
     </section>

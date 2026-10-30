@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   title: { default: "EVIQ: know the charger works before you drive there", template: "%s | EVIQ" },
   description:
     "EVIQ is a driver-verified reliability layer for EV charging. Registries say a charger exists; EVIQ combines operator data with one-tap driver reports to show whether it works. Launching in India first.",
+  alternates: { languages: { "en-IN": "/", "hi-IN": "/hi" } },
   openGraph: {
     title: "EVIQ: know the charger works before you drive there",
     description:

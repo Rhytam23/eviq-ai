@@ -1,4 +1,5 @@
 import StatusBadge from "@/components/StatusBadge";
+import { useLang } from "@/components/useLang";
 import { formatDistance } from "@/lib/format";
 import { statusHeadline } from "@/lib/statusMeta";
 import type { Station } from "@/types/station";
@@ -17,6 +18,7 @@ function connectorSummary(station: Station): string {
 }
 
 export default function StationList({ stations, selectedId, miles, onSelect }: Props) {
+  const [lang] = useLang();
   return (
     <ul className="divide-y divide-line">
       {stations.map((s) => (
@@ -37,7 +39,7 @@ export default function StationList({ stations, selectedId, miles, onSelect }: P
             </span>
             <span className="mt-0.5 block truncate text-sm text-muted">{connectorSummary(s)}</span>
             <span className="mt-2 block">
-              <StatusBadge status={s.reliability} text={statusHeadline(s)} />
+              <StatusBadge status={s.reliability} text={statusHeadline(s, undefined, lang)} />
             </span>
           </button>
         </li>

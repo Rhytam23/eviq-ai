@@ -2,7 +2,10 @@
 
 import StatusBadge from "@/components/StatusBadge";
 import ReportPanel, { type ReportUi } from "@/components/ReportPanel";
-import { formatDistance, timeAgo } from "@/lib/format";
+import WhatsAppShare from "@/components/WhatsAppShare";
+import { useLang } from "@/components/useLang";
+import { t, timeAgoIn } from "@/lib/i18n";
+import { formatDistance } from "@/lib/format";
 import { STATUS_RULES, operatorLine, statusHeadline } from "@/lib/statusMeta";
 import type { ReportStatus, Station } from "@/types/station";
 
@@ -40,6 +43,8 @@ export default function StationDetail({
   onClose,
 }: Props) {
   const source = sourceLink(station);
+  const [lang] = useLang();
+  const headline = statusHeadline(station, undefined, lang);
 
   return (
     <article className="px-4 pb-6 pt-3" aria-label={`Details for ${station.name}`}>
@@ -48,7 +53,7 @@ export default function StationDetail({
         onClick={onClose}
         className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm text-brand underline-offset-2 hover:underline"
       >
-        <span aria-hidden>←</span> Back to list
+        <span aria-hidden>←</span> {t(lang, "back")}
       </button>
 
       <h2 className="font-serif text-2xl leading-tight">{station.name}</h2>
@@ -59,10 +64,12 @@ export default function StationDetail({
       </p>
 
       <div className="mt-3">
-        <StatusBadge status={station.reliability} text={statusHeadline(station)} />
+        <StatusBadge status={station.reliability} text={headline} />
       </div>
       <p className="mt-2 text-sm text-muted">{operatorLine(station)}</p>
-      <p className="mt-1 text-sm text-muted">Why: {STATUS_RULES[station.reliability]}</p>
+      <p className="mt-1 text-sm text-muted">
+        {t(lang, "why")}: {STATUS_RULES[station.reliability]}
+      </p>
 
       <div className="mt-5">
         <ReportPanel
@@ -75,7 +82,7 @@ export default function StationDetail({
 
       <section className="mt-5" aria-labelledby="specs-heading">
         <h3 id="specs-heading" className="text-sm font-semibold">
-          Chargers
+          {t(lang, "chargers")}
         </h3>
         {station.connectors.length > 0 ? (
           <ul className="mt-1 divide-y divide-line text-sm">
@@ -96,33 +103,31 @@ export default function StationDetail({
         )}
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-muted">Charging points</dt>
-            <dd>{station.points ?? "Unknown"}</dd>
+            <dt className="text-muted">{t(lang, "chargingPoints")}</dt>
+            <dd>{station.points ?? t(lang, "unknown")}</dd>
           </div>
           <div>
-            <dt className="text-muted">Price</dt>
-            <dd>{station.cost ?? "Unknown"}</dd>
+            <dt className="text-muted">{t(lang, "price")}</dt>
+            <dd>{station.cost ?? t(lang, "unknown")}</dd>
           </div>
         </dl>
       </section>
 
       <section className="mt-5" aria-labelledby="reports-heading">
         <h3 id="reports-heading" className="text-sm font-semibold">
-          Recent driver reports
+          {t(lang, "recentReports")}
         </h3>
         {station.reports.recent.length > 0 ? (
           <ul className="mt-1 text-sm">
             {station.reports.recent.slice(0, 5).map((r) => (
               <li key={`${r.at}-${r.status}`} className="flex justify-between py-1">
                 <span className="capitalize">{r.status}</span>
-                <span className="text-muted">{timeAgo(r.at)}</span>
+                <span className="text-muted">{timeAgoIn(lang, r.at)}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-sm text-muted">
-            No driver reports in the last 72 hours. Be the first.
-          </p>
+          <p className="mt-1 text-sm text-muted">{t(lang, "noReports")}</p>
         )}
       </section>
 
@@ -133,20 +138,26 @@ export default function StationDetail({
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center rounded-lg bg-brand px-4 font-medium text-white"
         >
-          Get directions
+          {t(lang, "directions")}
         </a>
         <p className="flex flex-wrap gap-x-4 text-muted">
           <a
             href={`/s/${encodeURIComponent(station.id)}`}
             className="inline-flex min-h-11 items-center underline"
           >
-            Share page
+            {t(lang, "sharePage")}
           </a>
+          <WhatsAppShare
+            text={t(lang, "whatsappText", { name: station.name, status: headline })}
+            path={`/s/${encodeURIComponent(station.id)}`}
+            label={t(lang, "whatsapp")}
+            className="font-medium text-ok underline"
+          />
           <a
             href={`/qr/${encodeURIComponent(station.id)}`}
             className="inline-flex min-h-11 items-center underline"
           >
-            QR sticker
+            {t(lang, "qr")}
           </a>
         </p>
         <p className="text-muted">

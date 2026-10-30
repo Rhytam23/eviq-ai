@@ -25,6 +25,8 @@ describe("normalizeConnectorType", () => {
     ["Type 2 (Socket Only)", "Type 2"],
     ["Type 2 (Tethered Connector)", "Type 2"],
     ["Type 1 (J1772)", "Type 1"],
+    ["Bharat DC-001 (3.3kW)", "Bharat DC"],
+    ["Bharat AC-001", "Bharat AC"],
     ["Schuko", "Other"],
     [undefined, "Other"],
   ])("%s -> %s", (title, expected) => {

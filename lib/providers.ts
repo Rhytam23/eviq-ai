@@ -58,6 +58,8 @@ export async function fetchWithRetry(
 
 export function normalizeConnectorType(title: string | null | undefined): ConnectorType {
   const t = (title ?? "").toLowerCase();
+  if (/bharat[^a-z]*dc|dc-?001/.test(t)) return "Bharat DC";
+  if (/bharat[^a-z]*ac|ac-?001/.test(t)) return "Bharat AC";
   if (/chademo/.test(t)) return "CHAdeMO";
   if (/ccs|combo/.test(t)) return "CCS";
   if (/nacs|tesla|supercharger/.test(t)) return "NACS";

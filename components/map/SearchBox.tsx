@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useLang } from "@/components/useLang";
 import { INDIA_CITIES } from "@/lib/cities";
+import { t } from "@/lib/i18n";
 
 export interface Place {
   name: string;
@@ -32,6 +34,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const cache = useRef(new Map<string, Place[]>());
+  const [lang] = useLang();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,7 +77,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
     <div className="relative">
       <form onSubmit={submit} role="search" className="flex gap-2">
         <label className="sr-only" htmlFor="place-search">
-          Search for a city or address
+          {t(lang, "searchLabel")}
         </label>
         <input
           id="place-search"
@@ -86,7 +89,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
             setPlaces(null);
             setMessage("");
           }}
-          placeholder="Search an Indian city or address"
+          placeholder={t(lang, "searchPlaceholder")}
           autoComplete="off"
           className="min-w-0 flex-1 min-h-11 rounded-lg border border-line bg-white px-3 text-base placeholder:text-muted/70 md:text-sm"
         />
@@ -95,7 +98,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
           disabled={status === "loading" || query.trim().length < 2}
           className="min-h-11 rounded-lg bg-brand px-4 text-sm font-medium text-white disabled:opacity-50"
         >
-          {status === "loading" ? "Searching" : "Search"}
+          {status === "loading" ? t(lang, "searching") : t(lang, "search")}
         </button>
         <button
           type="button"
@@ -119,7 +122,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
           </svg>
         </button>
       </form>
-      <ul className="-mx-1 mt-1 flex gap-1 overflow-x-auto pb-1" aria-label="Jump to a city">
+      <ul className="-mx-1 mt-1 flex gap-1 overflow-x-auto pb-1" aria-label={t(lang, "jumpToCity")}>
         {INDIA_CITIES.map((c) => (
           <li key={c.name} className="shrink-0">
             <button

@@ -4,6 +4,7 @@ import { stubBasemap, stubStations } from "./helpers";
 
 const PAGES = [
   "/",
+  "/hi",
   "/how-it-works",
   "/developers",
   "/privacy",

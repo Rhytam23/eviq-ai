@@ -16,6 +16,8 @@ import { submitReport } from "@/lib/reportClient";
 import StationDetail from "./StationDetail";
 import StationList from "./StationList";
 import { useMiles } from "./useMiles";
+import { useLang } from "@/components/useLang";
+import { LANGS, LANG_NAMES, isLang } from "@/lib/i18n";
 
 // MapLibre touches `window`, so it is loaded in the browser only.
 const MapView = dynamic(() => import("./MapView"), {
@@ -95,6 +97,12 @@ export default function MapApp() {
 
   const [filters, setFilters] = useState<FilterState>({ connectors: [], minKw: 0 });
   const [miles, changeMiles] = useMiles();
+  const [lang, setLang] = useLang();
+  // /map?lang=hi (from the Hindi landing page) picks the language once and remembers it.
+  const langParam = searchParams.get("lang");
+  useEffect(() => {
+    if (isLang(langParam)) setLang(langParam);
+  }, [langParam, setLang]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reportUi, setReportUi] = useState<Record<string, ReportUi>>({});
   const [sheet, setSheet] = useState<Sheet>("half");
@@ -267,9 +275,22 @@ export default function MapApp() {
           <span aria-hidden className="tricolor absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <Logo />
-            <p className="hidden text-xs text-muted min-[400px]:block">
-              Driver-verified charger status
-            </p>
+            <div role="group" aria-label="Language" className="flex items-center">
+              {LANGS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  lang={l}
+                  aria-pressed={lang === l}
+                  onClick={() => setLang(l)}
+                  className={`min-h-11 rounded-full px-3 text-sm ${
+                    lang === l ? "bg-brand font-medium text-white" : "text-brand hover:bg-brand/5"
+                  }`}
+                >
+                  {LANG_NAMES[l]}
+                </button>
+              ))}
+            </div>
           </div>
           <SearchBox onPick={pickPlace} onLocate={locate} locating={geo === "locating"} />
           <Filters

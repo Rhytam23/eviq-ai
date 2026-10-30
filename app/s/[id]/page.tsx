@@ -3,6 +3,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import ShareReport from "@/components/ShareReport";
 import StatusBadge from "@/components/StatusBadge";
+import WhatsAppShare from "@/components/WhatsAppShare";
 import { formatDistance } from "@/lib/format";
 import { recordEvent } from "@/lib/metrics";
 import { operatorLine, STATUS_RULES, statusHeadline } from "@/lib/statusMeta";
@@ -120,6 +121,12 @@ export default async function SharePage({ params }: Params) {
         >
           Get directions
         </a>
+        <WhatsAppShare
+          text={`${station.name}: ${statusHeadline(station)}. Check it on EVIQ:`}
+          path={`/s/${encodeURIComponent(station.id)}`}
+          label="Share on WhatsApp"
+          className="rounded-full border border-ink/20 px-6 font-medium text-ok"
+        />
       </div>
     </article>
   );

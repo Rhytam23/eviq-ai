@@ -2,7 +2,16 @@ export type OperatorStatus = "operational" | "offline" | "unknown";
 export type ReportStatus = "working" | "broken" | "busy";
 export type Reliability = "verified" | "reported-broken" | "operator-offline" | "unverified";
 
-export const CONNECTOR_TYPES = ["CCS", "CHAdeMO", "NACS", "Type 2", "Type 1", "Other"] as const;
+export const CONNECTOR_TYPES = [
+  "CCS",
+  "CHAdeMO",
+  "NACS",
+  "Type 2",
+  "Type 1",
+  "Bharat DC",
+  "Bharat AC",
+  "Other",
+] as const;
 export type ConnectorType = (typeof CONNECTOR_TYPES)[number];
 
 export interface Connector {

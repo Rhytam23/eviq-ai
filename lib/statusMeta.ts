@@ -1,5 +1,6 @@
 import { BROKEN_WINDOW_HOURS, VERIFIED_WINDOW_HOURS } from "@/lib/reliability";
 import { timeAgo } from "@/lib/format";
+import { statusLabelIn, timeAgoIn, type Lang } from "@/lib/i18n";
 import type { Reliability, Station } from "@/types/station";
 
 /** Same values as the ok / bad / warn / unknown colours in tailwind.config.ts (MapLibre needs raw hex). */
@@ -35,14 +36,18 @@ export const STATUS_RULES: Record<Reliability, string> = {
 };
 
 /** The status label with the time that matters for it, e.g. "Verified working · 12 min ago". */
-export function statusHeadline(station: Station, now: number = Date.now()): string {
-  const label = STATUS_LABELS[station.reliability];
+export function statusHeadline(
+  station: Station,
+  now: number = Date.now(),
+  lang: Lang = "en"
+): string {
+  const label = statusLabelIn(lang, station.reliability, STATUS_LABELS[station.reliability]);
   switch (station.reliability) {
     case "verified":
-      return `${label} · ${timeAgo(station.verifiedAt, now)}`;
+      return `${label} · ${timeAgoIn(lang, station.verifiedAt, now)}`;
     case "reported-broken": {
       const newest = station.reports.recent.find((r) => r.status === "broken");
-      return newest ? `${label} · ${timeAgo(newest.at, now)}` : label;
+      return newest ? `${label} · ${timeAgoIn(lang, newest.at, now)}` : label;
     }
     default:
       return label;

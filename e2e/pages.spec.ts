@@ -5,7 +5,7 @@ import {
   REPORT_RETENTION_HOURS,
   VERIFIED_WINDOW_HOURS,
 } from "../lib/reliability";
-import { collectErrors } from "./helpers";
+import { collectErrors, stubBasemap, stubStations } from "./helpers";
 
 test("landing page: sections animate in on scroll and are readable afterwards", async ({
   page,
@@ -19,6 +19,41 @@ test("landing page: sections animate in on scroll and are readable afterwards", 
     "href",
     /\/map\?lat=22\.5726&lng=88\.3639/
   );
+});
+
+test("landing page: the example charger reacts to a tap using the real status rule", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByText("Reported broken · 1 h ago").first()).toBeVisible();
+  await page.getByRole("button", { name: "Working" }).first().click();
+  await expect(page.getByText("Verified working · just now").first()).toBeVisible();
+  await page.getByRole("button", { name: "Reset the example" }).click();
+  await expect(page.getByText("Reported broken · 1 h ago").first()).toBeVisible();
+});
+
+test("Hindi landing page: Hindi heading, map links carry the language, WhatsApp share", async ({
+  page,
+}) => {
+  await page.goto("/hi");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("चलता है");
+  await expect(page.getByRole("link", { name: "लाइव मैप खोलें" }).first()).toHaveAttribute(
+    "href",
+    "/map?lang=hi"
+  );
+  await expect(page.getByRole("link", { name: "WhatsApp पर शेयर करें" })).toHaveAttribute(
+    "href",
+    /^https:\/\/wa\.me\/\?text=/
+  );
+});
+
+test("map: ?lang=hi switches the map to Hindi and the choice sticks", async ({ page }) => {
+  await stubBasemap(page);
+  await stubStations(page);
+  await page.goto("/map?lang=hi");
+  await expect(page.getByPlaceholder("भारत का कोई शहर या पता खोजें")).toBeVisible();
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.getByPlaceholder("Search an Indian city or address")).toBeVisible();
 });
 
 test("landing page: promise, CTAs, no console errors, no horizontal scroll", async ({ page }) => {
