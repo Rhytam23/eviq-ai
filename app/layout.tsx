@@ -1,38 +1,45 @@
-import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site";
+import type { Metadata, Viewport } from "next";
+import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import RegisterSw from "@/components/RegisterSw";
 
-const inter = Inter({
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const serif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-serif",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "EVIQ AI — AI Charging Intelligence for Every EV Journey",
+  metadataBase: new URL(SITE_URL),
+  title: { default: "EVIQ: know the charger works before you drive there", template: "%s | EVIQ" },
   description:
-    "EVIQ AI is the world's AI Operating System for EV Mobility Intelligence, predicting optimal charging decisions, charger reliability, queue times, and battery health.",
-  metadataBase: new URL("https://eviq.ai"),
+    "EVIQ is a driver-verified reliability layer for EV charging. Registries say a charger exists; EVIQ combines operator data with one-tap driver reports to show whether it works, anywhere in the world.",
   openGraph: {
-    title: "EVIQ AI — The operating system for EV mobility intelligence",
+    title: "EVIQ: know the charger works before you drive there",
     description:
-      "AI-powered EV charging decisions. Predict charger queues, reliability, and battery range in real time.",
+      "Driver-verified charger status for any city, with the rules behind every label in the open.",
     type: "website",
-    siteName: "EVIQ AI",
+    siteName: "EVIQ",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "EVIQ AI — AI Charging Intelligence",
-    description: "The operating system for EV mobility intelligence.",
-  },
+  twitter: { card: "summary_large_image" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#F6F5F0",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans bg-[#05070B] text-white overflow-x-hidden`}>
+    <html lang="en" className={`${inter.variable} ${serif.variable}`}>
+      <body className="font-sans">
         {children}
+        <RegisterSw />
       </body>
     </html>
   );

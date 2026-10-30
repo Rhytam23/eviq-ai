@@ -1,15 +1,10 @@
-# Security Policy — EVIQ AI
+# Security Policy — EVIQ
 
-We take the security of EVIQ AI, our vehicle integrations, and charging operator connections seriously.
+We take the security of EVIQ, our vehicle integrations, and charging operator connections seriously.
 
 ## Supported Versions
 
-We actively support and patch vulnerabilities in the following versions:
-
-| Version | Supported |
-| :------ | :-------- |
-| v1.0.x  | Yes       |
-| < v1.0  | No        |
+Only the latest commit on `main` is supported. EVIQ has no versioned releases yet.
 
 ---
 

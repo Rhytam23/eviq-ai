@@ -1,30 +1,13 @@
-# Changelog — EVIQ AI
+# Changelog
 
-All notable changes to the EVIQ AI project will be documented in this file.
+## Unreleased
 
----
-
-## [Unreleased]
-
-### Fixed
-
-- `/api/chargers`: validate and clamp query params, prefer a server-only `OCM_API_KEY`, and return real error statuses instead of masking failures as empty results.
-- Charger data: handle stations with no connectors (NaN port counts), use the fastest connector's power, and map CCS1/CCS2/CHAdeMO/Type 2 correctly.
-- Demo: remove duplicate route planning on load, discard stale in-flight plans, show real lookup errors, fix autocomplete re-fetching and "undefined" place names, guard zero-power chargers, and keep 0°C weather from showing as 22°C.
-- Reservation simulation: timers no longer restart on parent re-renders, side effects moved out of state updaters, and cost/energy use the real vehicle and tariff.
-- Map: stop re-framing the camera on every recompute and escape station names in popups (XSS).
-- Landing: dead footer anchors, intro animation now landing-only, honours reduced motion, and no longer blocks input; Inter font wired up; invalid Tailwind classes replaced.
-
----
-
-## [1.0.0] - 2026-07-10
-
-### Added
-
-- Initial release of the EVIQ AI Mobility Intelligence Platform.
-- Fully interactive visualizer for EV Charging Stations, Battery Profiles, and Route plans.
-- Live dashboard simulation showing dynamic charging speed curves, queue predictions, and reservation states.
-- AI Assistant preset conversational terminal.
-- Technical architecture SVG diagram mapping our 9-stage pipeline.
-- Target users and target verticals overview grids.
-- Complete documentation suite (Build Bible, Design System, Experience Bible, YC Thesis, Security).
+- Reposition as a driver-verified reliability layer for EV charging.
+- New `/map` product with auto-locate, city search, clustering, filters, one-tap reports.
+- Charger data from Open Charge Map or OpenStreetMap; reports in Supabase or memory.
+- Transparent status rules with unit tests; landing, privacy, OG image, sitemap, robots, 404.
+- Removed the earlier trip-planner demo, modelled price/availability/reliability numbers and the dark HUD landing page.
+- Public read API `/api/v1`, OpenAPI file, `/developers`, `/how-it-works`, share pages, QR stickers, PWA, metrics, admin page.
+- Upgrade to Next 16 / React 19 / MapLibre 6 / Vitest 5 / ESLint 9; `npm audit` reports 0 vulnerabilities.
+- Playwright e2e and axe checks in CI; CSP and security headers; `/api/health`; error boundaries.
+- Security: removed a browser-exposed Open Charge Map key (revoke it), upgraded Next.js to 14.2.35.

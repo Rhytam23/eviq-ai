@@ -1,97 +1,100 @@
-"use client";
-import { Container } from "@/components/ui/Container";
-import CockpitHud from "@/components/landing/CockpitHud";
-import { motion } from "framer-motion";
+import Link from "next/link";
+import StatusBadge from "@/components/StatusBadge";
+
+const MAILTO = "mailto:founders@eviq.ai?subject=EVIQ";
+
+function Card({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_0_rgba(20,24,27,0.04)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+/** Illustrative only: the same charger, seen through a registry and through EVIQ. Not a real station. */
+function SameChargerTwice() {
+  return (
+    <div className="relative">
+      <div className="space-y-4">
+        <Card label="What a registry shows">
+          <p className="font-medium">Example charger, 2 × CCS 150 kW</p>
+          <p className="mt-1 text-sm text-muted">Status field: operational</p>
+          <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-ok/10 px-3 py-1 text-sm font-medium text-ok">
+            <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-ok" />
+            Operational
+          </p>
+        </Card>
+        <Card label="What EVIQ shows">
+          <p className="font-medium">Example charger, 2 × CCS 150 kW</p>
+          <div className="mt-3">
+            <StatusBadge status="reported-broken" text="Reported broken · 1 h ago" />
+          </div>
+          <ul className="mt-4 divide-y divide-line text-sm">
+            <li className="flex justify-between py-1.5">
+              <span>Broken</span>
+              <span className="text-muted">1 h ago</span>
+            </li>
+            <li className="flex justify-between py-1.5">
+              <span>Broken</span>
+              <span className="text-muted">3 h ago</span>
+            </li>
+            <li className="flex justify-between py-1.5">
+              <span>Working</span>
+              <span className="text-muted">2 days ago</span>
+            </li>
+          </ul>
+        </Card>
+      </div>
+      <p className="mt-3 text-xs text-muted">
+        Illustration with an invented example, not a real station. The live map shows real ones.
+      </p>
+    </div>
+  );
+}
 
 export default function Hero() {
   return (
-    <section className="relative pt-[130px] md:pt-[168px] pb-20 md:pb-28 overflow-hidden bg-[#05070B]">
-      {/* Subtle ambient glow — no intense radials */}
-      <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_50%_0%,rgba(255,122,0,0.025),transparent_70%)] pointer-events-none z-0" />
-
-      <Container>
-        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-10 items-center relative z-10">
-          <div>
-            {/* Eyebrow */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-mono tracking-widest text-white/50 uppercase"
-            >
-              AI Mobility Intelligence Platform
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, delay: 0.08 }}
-              className="mt-6 text-[42px] sm:text-[60px] lg:text-[72px] text-white font-bold leading-[0.94] tracking-tight"
-            >
-              Intelligently decides where, when and why you should charge.
-            </motion.h1>
-
-            {/* Subhead */}
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.18 }}
-              className="mt-6 max-w-[540px] text-[17px] md:text-[19px] leading-relaxed text-[#A0AEC0]"
-            >
-              EVIQ AI connects BMS telemetry with live charger health data to eliminate charging
-              anxiety before it starts.
-            </motion.p>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.28 }}
-              className="mt-9 flex flex-wrap items-center gap-3"
-            >
-              <a
-                href="/demo"
-                className="px-[24px] py-[13px] rounded-full bg-orange text-white text-[14px] font-semibold hover:bg-orange/90 active:scale-[0.98] transition-all"
-              >
-                Try the demo
-              </a>
-              <a
-                href="#access"
-                className="px-[24px] py-[13px] rounded-full bg-white/[0.04] text-white text-[14px] font-medium border border-white/[0.08] hover:bg-white/[0.08] active:scale-[0.98] transition-all"
-              >
-                Request early access
-              </a>
-            </motion.div>
-
-            {/* Stats row */}
-            <div className="mt-12 border-t border-white/[0.06] pt-7 grid grid-cols-3 gap-6">
-              {[
-                { value: "<42ms", label: "Solver Latency" },
-                { value: "99.4%", label: "Port Uptime" },
-                { value: "14M+", label: "Miles Optimized" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <span className="text-white font-bold text-[20px] md:text-[22px]">{s.value}</span>
-                  <p className="text-[11px] text-[#A0AEC0] mt-1 font-mono uppercase tracking-wider">
-                    {s.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: CockpitHud */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full"
+    <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-20 pt-14 md:grid-cols-[1.25fr_1fr] md:pb-28 md:pt-24">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+          Driver-verified reliability for EV charging
+        </p>
+        <h1 className="mt-5 font-serif text-[2.9rem] leading-[1.02] tracking-tight sm:text-6xl md:text-[5.2rem]">
+          Know the charger{" "}
+          <span className="relative isolate whitespace-nowrap italic">
+            <span
+              aria-hidden
+              className="absolute -inset-x-1 bottom-[0.06em] -z-10 h-[0.3em] bg-volt"
+            />
+            works
+          </span>{" "}
+          before you drive there.
+        </h1>
+        <p className="mt-7 max-w-xl text-lg text-muted md:text-xl">
+          Registries tell you a charger exists. They cannot tell you it works. EVIQ adds what
+          drivers see on the ground, one tap at a time, and turns it into a status you can check in
+          any city.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center gap-3">
+          <Link
+            href="/map"
+            className="inline-flex min-h-12 items-center rounded-full bg-brand px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-ink"
           >
-            <CockpitHud />
-          </motion.div>
+            Open the live map
+          </Link>
+          <a
+            href={MAILTO}
+            className="inline-flex min-h-12 items-center rounded-full border border-ink/20 px-6 py-3.5 text-base font-medium transition-colors hover:border-ink"
+          >
+            Talk to the founders
+          </a>
         </div>
-      </Container>
-    </section>
+        <p className="mt-5 text-sm text-muted">
+          No account. Works worldwide. We do not save your location in our database.
+        </p>
+      </div>
+      <SameChargerTwice />
+    </div>
   );
 }

@@ -17,6 +17,8 @@ Closes #[issue-number]
 
 - [ ] Code follows formatting guidelines (`npm run format`)
 - [ ] Code passes linting checks (`npm run lint`)
+- [ ] Tests pass (`npm test`)
+- [ ] Dead-code sweep done per AGENTS.md
 - [ ] Code compiles and typechecks cleanly (`npm run typecheck`)
 - [ ] Next.js production build succeeds locally (`npm run build`)
 - [ ] Changes look correct on mobile viewports

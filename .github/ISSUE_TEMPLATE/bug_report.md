@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve EVIQ AI
+about: Create a report to help us improve EVIQ
 title: "[BUG] "
 labels: bug
 assignees: ""

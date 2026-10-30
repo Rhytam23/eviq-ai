@@ -2,117 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --navy: #050b14;
-  --near-black: #0b1624;
-  --orange: #00e5ff;
-  --shell: #101d2e;
-}
-
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background: #050b14;
-  color: #ffffff;
-  overflow-x: hidden;
+  background: #f6f5f0;
+  color: #14181b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(0, 229, 255, 0.18);
-  color: #ffffff;
+  background: #c8f03c;
+  color: #0b3d2e;
 }
 
-/* Premium utilities */
-.text-display {
-  letter-spacing: -0.035em;
-  font-weight: 660;
-  line-height: 0.92;
+:focus-visible {
+  outline: 2px solid #0b3d2e;
+  outline-offset: 2px;
 }
 
-.glass {
-  background: rgba(11, 22, 36, 0.65);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-dark {
-  background: rgba(5, 11, 20, 0.86);
-  backdrop-filter: blur(22px) saturate(1.2);
-  -webkit-backdrop-filter: blur(22px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.hairline {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.noise::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.015;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-
-.grid-faint {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-.orange-glow,
-.cyan-glow {
-  box-shadow:
-    0 0 28px rgba(0, 229, 255, 0.17),
-    inset 0 0 22px rgba(0, 229, 255, 0.035);
-}
-
-.shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.shimmer::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 140%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent 20%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 80%
-  );
-  animation: shimmerMove 3.8s infinite;
-}
-@keyframes shimmerMove {
-  0% {
-    left: -150%;
-  }
-  100% {
-    left: 150%;
-  }
-}
-
-/* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  html {
+    scroll-behavior: auto;
   }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+/* Touch-friendly map controls (MapLibre ships 29px buttons). */
+.maplibregl-ctrl.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
 }

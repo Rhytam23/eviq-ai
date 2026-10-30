@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: EVIQ public read API
+  version: 1.0.0-alpha
+  description: |
+    Charger status that combines registry data (Open Charge Map or OpenStreetMap) with driver reports.
+    **Alpha:** no API key, no uptime commitment, the shape may change. Rate limit: 60 requests per minute per
+    client address. Responses are cached publicly for 30 seconds. Status rules: https://eviq.ai/how-it-works
+    Registry data: Open Charge Map (CC BY 4.0) and OpenStreetMap contributors (ODbL). Attribute accordingly.
+servers:
+  - url: https://eviq.ai
+paths:
+  /api/v1/stations:
+    get:
+      summary: Chargers around a point, with computed status
+      parameters:
+        - {
+            name: lat,
+            in: query,
+            required: true,
+            schema: { type: number, minimum: -90, maximum: 90 },
+          }
+        - {
+            name: lng,
+            in: query,
+            required: true,
+            schema: { type: number, minimum: -180, maximum: 180 },
+          }
+        - name: radiusKm
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: Up to 200 nearest chargers, sorted by distance. Coordinates are rounded to about 100 m.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StationsResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+  /api/v1/stations/{id}:
+    get:
+      summary: One charger by EVIQ id
+      parameters:
+        - { $ref: "#/components/parameters/StationId" }
+      responses:
+        "200":
+          description: The charger with its computed status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  station: { $ref: "#/components/schemas/Station" }
+                  storage: { type: string, enum: [supabase, memory] }
+                  reportsAvailable: { type: boolean }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+  /api/v1/stations/{id}/reports:
+    get:
+      summary: Raw driver reports from the last 72 hours (newest first, at most 20)
+      parameters:
+        - { $ref: "#/components/parameters/StationId" }
+      responses:
+        "200":
+          description: Reports for the station. Works for any valid id, even if the registry has no such station.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stationId: { type: string }
+                  reports:
+                    type: array
+                    items: { $ref: "#/components/schemas/Report" }
+                  storage: { type: string, enum: [supabase, memory] }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+components:
+  parameters:
+    StationId:
+      name: id
+      in: path
+      required: true
+      description: "`ocm:<number>` for Open Charge Map or `osm:<n|w|r><number>` for OpenStreetMap. `ocm:` ids need the server to have an OCM key."
+      schema: { type: string, pattern: "^(ocm:[0-9]{1,10}|osm:[nwr][0-9]{1,15})$" }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+  schemas:
+    Report:
+      type: object
+      properties:
+        status: { type: string, enum: [working, broken, busy] }
+        at: { type: string, format: date-time }
+    Connector:
+      type: object
+      properties:
+        type: { type: string, enum: [CCS, CHAdeMO, NACS, Type 2, Type 1, Other] }
+        kw: { type: number, nullable: true }
+        quantity: { type: integer, nullable: true }
+    Station:
+      type: object
+      description: Fields the registry does not publish are null, never estimated.
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [ocm, osm] }
+        name: { type: string }
+        operator: { type: string, nullable: true }
+        lat: { type: number }
+        lng: { type: number }
+        address: { type: string, nullable: true }
+        distanceKm: { type: number, nullable: true }
+        points: { type: integer, nullable: true }
+        maxKw: { type: number, nullable: true }
+        connectors:
+          type: array
+          items: { $ref: "#/components/schemas/Connector" }
+        operatorStatus: { type: string, enum: [operational, offline, unknown] }
+        statusUpdatedAt: { type: string, format: date-time, nullable: true }
+        cost: { type: string, nullable: true }
+        reports:
+          type: object
+          properties:
+            recent:
+              type: array
+              items: { $ref: "#/components/schemas/Report" }
+        reliability:
+          { type: string, enum: [verified, reported-broken, operator-offline, unverified] }
+        verifiedAt: { type: string, format: date-time, nullable: true }
+    StationsResponse:
+      type: object
+      properties:
+        stations:
+          type: array
+          items: { $ref: "#/components/schemas/Station" }
+        source: { type: string, enum: [ocm, osm] }
+        fallbackReason: { type: string, nullable: true }
+        storage: { type: string, enum: [supabase, memory] }
+        reportsAvailable: { type: boolean }
+        fetchedAt: { type: string, format: date-time }

@@ -1,4 +1,4 @@
-# Contributor Covenant Code of Conduct — EVIQ AI
+# Contributor Covenant Code of Conduct — EVIQ
 
 ## Our Pledge
 

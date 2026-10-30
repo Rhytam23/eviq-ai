@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea or enhancement for EVIQ AI
+about: Suggest an idea or enhancement for EVIQ
 title: "[FEATURE] "
 labels: enhancement
 assignees: ""

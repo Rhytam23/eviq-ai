@@ -1,0 +1,45 @@
+{
+  "elements": [
+    {
+      "type": "node",
+      "id": 5551,
+      "lat": 48.8566,
+      "lon": 2.3522,
+      "tags": {
+        "amenity": "charging_station",
+        "name": "Place Example",
+        "operator": "Example Network",
+        "capacity": "6",
+        "socket:type2_combo": "4",
+        "socket:type2_combo:output": "150 kW",
+        "socket:type2": "2",
+        "socket:type2:output": "22000",
+        "fee": "yes",
+        "addr:street": "Rue Exemple",
+        "addr:housenumber": "12",
+        "addr:city": "Paris"
+      }
+    },
+    {
+      "type": "way",
+      "id": 7001,
+      "center": { "lat": 48.86, "lon": 2.36 },
+      "tags": { "amenity": "charging_station", "fee": "no", "socket:chademo": "1" }
+    },
+    {
+      "type": "node",
+      "id": 5552,
+      "lat": 48.87,
+      "lon": 2.37,
+      "tags": {
+        "amenity": "charging_station",
+        "operational_status": "broken",
+        "brand": "Brand X",
+        "socket:tesla_supercharger": "8",
+        "socket:tesla_supercharger:output": "250 kW",
+        "socket:type1": "no"
+      }
+    },
+    { "type": "node", "id": 5553, "tags": { "amenity": "charging_station" } }
+  ]
+}

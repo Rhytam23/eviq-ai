@@ -1,34 +1,27 @@
-# Contributing to EVIQ AI
+# Contributing to EVIQ
 
-Thank you for your interest in contributing to EVIQ AI! We welcome contributions to help build the ultimate AI operating system for EV mobility intelligence.
-
----
+Thanks for helping. Please read [AGENTS.md](AGENTS.md) first: it has the conventions, the data-honesty rule
+(never fabricate data or metrics) and the dead-code sweep we do after every change.
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
----
+## Reporting bugs and suggesting changes
 
-## How Can I Contribute?
+Open an issue at <https://github.com/Rhytam23/eviq-ai/issues> with steps to reproduce (bugs) or the problem you
+want solved (features). Security issues: see [SECURITY.md](SECURITY.md), do not open a public issue.
 
-### Reporting Bugs
+## Pull requests
 
-- Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/eviq/eviq-ai/issues).
-- If you find a new bug, open a new issue. Be sure to include a clear title, steps to reproduce, and screenshots.
-
-### Suggesting Enhancements
-
-- Open a new issue detailing the enhancement, why it is needed, and how it fits into EVIQ AI's core engines.
-
-### Code Submissions
-
-- Fork the repository.
-- Create a branch for your change (e.g., `feature/awesome-new-engine`).
-- Run quality checks:
-  ```bash
-  npm run lint
-  npm run typecheck
-  npm run build
-  ```
-- Open a Pull Request from your branch to our `main` branch.
+1. Branch from `main`; do not push to `main`.
+2. Run the checks:
+   ```bash
+   npx prettier --check .
+   npm run lint
+   npm run typecheck
+   npm test
+   npm run build
+   ```
+3. Check the map at desktop and mobile widths with no console errors.
+4. Open a PR into `main`.
