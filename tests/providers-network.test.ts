@@ -90,6 +90,18 @@ describe("fetchStations fallback", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("fails over to the next Overpass mirror when the first is unreachable", async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.startsWith("https://overpass-api.de") ? new Response("", { status: 504 }) : json(overpass)
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchStations({ lat: 48.86, lng: 2.35, radiusKm: 5 }, {});
+    expect(result.source).toBe("osm");
+    expect(result.stations.length).toBe(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toContain("overpass.kumi.systems");
+  });
+
   it("throws when the only provider fails, so the API can answer 502", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 504 })));
     await expect(fetchStations({ lat: 1, lng: 1, radiusKm: 5 }, {})).rejects.toThrow(

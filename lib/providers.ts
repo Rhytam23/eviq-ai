@@ -3,7 +3,15 @@ import type { Connector, ConnectorType, OperatorStatus, ProviderStation } from "
 
 // Endpoints can be overridden (self-hosted Overpass mirror, or the mock registry used by the e2e tests).
 const ocmUrl = () => process.env.OCM_API_URL || "https://api.openchargemap.io/v3/poi/";
-const overpassUrl = () => process.env.OVERPASS_API_URL || "https://overpass-api.de/api/interpreter";
+// Public Overpass servers, tried in order. Some are unreachable from certain regions (e.g. India), so we fail over.
+const OVERPASS_MIRRORS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
+/** OVERPASS_API_URL (self-hosted or the e2e mock) is used alone; otherwise the public mirrors in order. */
+const overpassUrls = (): string[] =>
+  process.env.OVERPASS_API_URL ? [process.env.OVERPASS_API_URL] : OVERPASS_MIRRORS;
 const FETCH_TIMEOUT_MS = 12_000;
 const USER_AGENT = "EVIQ/0.3 (+https://eviq.ai)";
 const REVALIDATE_SECONDS = 300;
@@ -287,18 +295,36 @@ export function buildOverpassQuery(area: SearchArea): string {
 }
 
 export function buildOverpassUrl(area: SearchArea): string {
-  return `${overpassUrl()}?${new URLSearchParams({ data: buildOverpassQuery(area) }).toString()}`;
+  return `${overpassUrls()[0]}?${new URLSearchParams({ data: buildOverpassQuery(area) }).toString()}`;
+}
+
+/** Runs an Overpass query against each mirror in turn; throws the last error if all of them fail. */
+async function queryOverpass(query: string): Promise<unknown[]> {
+  let lastError: unknown = new Error("No Overpass server configured");
+  for (const base of overpassUrls()) {
+    try {
+      const res = await fetchWithRetry(
+        `${base}?${new URLSearchParams({ data: query }).toString()}`,
+        {
+          headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+          next: { revalidate: REVALIDATE_SECONDS },
+        },
+        0
+      );
+      if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
+      const data = (await res.json()) as { elements?: unknown };
+      if (!Array.isArray(data.elements)) throw new Error("Overpass returned an unexpected payload");
+      return data.elements;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
 }
 
 async function fetchOsm(area: SearchArea): Promise<ProviderStation[]> {
-  const res = await fetchWithRetry(buildOverpassUrl(area), {
-    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
-    next: { revalidate: REVALIDATE_SECONDS },
-  });
-  if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
-  const data = (await res.json()) as { elements?: unknown };
-  if (!Array.isArray(data.elements)) throw new Error("Overpass returned an unexpected payload");
-  return data.elements
+  const elements = await queryOverpass(buildOverpassQuery(area));
+  return elements
     .map((el) => normalizeOsm(el as OsmElement, area))
     .filter((s): s is ProviderStation => s !== null);
 }
@@ -370,16 +396,6 @@ export async function fetchStationById(
   }
   const kind = OSM_KINDS[id[4] as keyof typeof OSM_KINDS];
   if (!id.startsWith("osm:") || !kind) return null;
-  const query = buildOverpassByIdQuery(kind, id.slice(5));
-  const res = await fetchWithRetry(
-    `${overpassUrl()}?${new URLSearchParams({ data: query }).toString()}`,
-    {
-      headers: { Accept: "application/json", "User-Agent": USER_AGENT },
-      next: { revalidate: REVALIDATE_SECONDS },
-    }
-  );
-  if (!res.ok) throw new Error(`Overpass responded ${res.status}`);
-  const data = (await res.json()) as { elements?: unknown };
-  if (!Array.isArray(data.elements)) throw new Error("Overpass returned an unexpected payload");
-  return data.elements[0] ? normalizeOsm(data.elements[0] as OsmElement) : null;
+  const elements = await queryOverpass(buildOverpassByIdQuery(kind, id.slice(5)));
+  return elements[0] ? normalizeOsm(elements[0] as OsmElement) : null;
 }

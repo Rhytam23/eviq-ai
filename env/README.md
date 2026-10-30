@@ -12,7 +12,7 @@ Never commit them, paste them in issues or PRs, or prefix a secret with `NEXT_PU
 | --------------------------- | ---------------------------- | ------------------- | ---------------------------------------------------------------------------------- |
 | `OCM_API_KEY`               | No                           | No (server only)    | Nothing. The app falls back to OpenStreetMap, which has less operator status data. |
 | `OCM_API_URL`               | No                           | No (server only)    | Nothing. Defaults to the public Open Charge Map endpoint.                          |
-| `OVERPASS_API_URL`          | No                           | No (server only)    | Nothing. Defaults to `https://overpass-api.de/api/interpreter`.                    |
+| `OVERPASS_API_URL`          | No                           | No (server only)    | Nothing. Defaults to three public Overpass mirrors, tried in order.                |
 | `SUPABASE_URL`              | Production: yes. Dev: no     | No (server only)    | Reports are kept in memory and lost on restart; the UI says so.                    |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production: yes. Dev: no     | No (server only)    | Same as above. Must be set together with `SUPABASE_URL`.                           |
 | `REPORT_HASH_SALT`          | Production: strongly advised | No (server only)    | A random per-process salt is used, so cooldowns reset on every restart or deploy.  |
@@ -50,8 +50,8 @@ zero-config developer experience.
 
 ## `OCM_API_URL` and `OVERPASS_API_URL` (advanced)
 
-Override the upstream endpoints, for example to use a self-hosted Overpass mirror (the public server has fair-use
-limits) or, in tests, a local mock. Leave them empty in normal deployments. They are server-only and never sent to
+Override the upstream endpoints, for example to use a self-hosted Overpass mirror (the public servers have fair-use
+limits). When set, it is used alone and the built-in mirror failover is off or, in tests, a local mock. Leave them empty in normal deployments. They are server-only and never sent to
 the browser.
 
 ## `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (report storage)
