@@ -29,6 +29,7 @@ describe("environment variable docs", () => {
   it("finds the variables the code reads", () => {
     expect([...used].sort()).toEqual([
       "ADMIN_TOKEN",
+      "LAUNCH_COUNTRIES",
       "NEXT_PUBLIC_SITE_URL",
       "OCM_API_KEY",
       "OCM_API_URL",

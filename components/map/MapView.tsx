@@ -88,8 +88,8 @@ export default function MapView(props: Props) {
       map = new maplibregl.Map({
         container: containerRef.current,
         style: STYLE_URL,
-        center: [10, 25],
-        zoom: 1.6,
+        center: [78.9, 22.5], // India
+        zoom: 4,
         minZoom: 1,
         attributionControl: {
           compact: true,

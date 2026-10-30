@@ -13,7 +13,7 @@ interface NominatimHit {
 }
 
 /**
- * City search through Nominatim. It is called on submit only (never per keystroke), identified
+ * City search through Nominatim, limited to India for the launch. It is called on submit only (never per keystroke), identified
  * with a real User-Agent, limited per client and cached for a day, per the Nominatim usage policy.
  */
 export async function GET(request: Request) {
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Enter 2 to 100 characters" }, { status: 400 });
   }
 
-  const url = `${NOMINATIM_URL}?${new URLSearchParams({ q, format: "jsonv2", limit: "5" }).toString()}`;
+  const url = `${NOMINATIM_URL}?${new URLSearchParams({ q, format: "jsonv2", limit: "5", countrycodes: "in" }).toString()}`;
   try {
     const res = await fetch(url, {
       headers: {
