@@ -17,7 +17,7 @@ const FAQ = [
   },
   {
     q: "Where does the charger data come from, and can I reuse it?",
-    a: "From Open Charge Map (CC BY 4.0) and OpenStreetMap contributors (ODbL), credited on every station. The driver reports are our own data. Using the reliability data in your product is what the planned API is for.",
+    a: "From Open Charge Map (CC BY 4.0) and OpenStreetMap contributors (ODbL), credited on every station. The driver reports are our own data. Using the reliability data in your product is what our data access is for.",
   },
   {
     q: "Is it free?",
