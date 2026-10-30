@@ -17,16 +17,20 @@ const BUYERS = [
   },
 ];
 
-const SAMPLE = `GET /v1/stations/ocm:12345/reliability
-
-{
-  "station_id": "ocm:12345",
-  "status": "reported-broken",
-  "last_report_at": "2026-03-02T09:41:00Z",
-  "reports_72h": { "working": 1, "broken": 2, "busy": 0 },
-  "operator_status": "operational",
-  "rules_version": "1"
-}`;
+const DELIVERABLES = [
+  {
+    title: "A current status",
+    body: "Working, reported broken, offline according to the operator, or unverified.",
+  },
+  {
+    title: "How fresh it is",
+    body: "When a driver last confirmed it, so you know how far to trust it.",
+  },
+  {
+    title: "The reason behind it",
+    body: "What the operator says and what recent drivers reported, side by side.",
+  },
+];
 
 export default function DataApi() {
   return (
@@ -51,24 +55,28 @@ export default function DataApi() {
         </ul>
       </div>
       <div className="min-w-0">
-        <div className="overflow-hidden rounded-2xl bg-ink">
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-xs">
-            <span className="text-paper/60">Sketch of the planned API</span>
-            <span className="rounded-full bg-volt px-2.5 py-0.5 font-semibold text-brand">
-              Not built yet
-            </span>
-          </div>
-          <pre
-            tabIndex={0}
-            className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-paper/90"
+        <div className="rounded-2xl bg-white/[0.06] p-6 md:p-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-volt">
+            What a buyer gets for every charger
+          </p>
+          <ul className="mt-6 space-y-5">
+            {DELIVERABLES.map((d) => (
+              <li key={d.title}>
+                <p className="font-semibold">{d.title}</p>
+                <p className="text-paper/75">{d.body}</p>
+              </li>
+            ))}
+          </ul>
+          <a
+            href="/developers"
+            className="mt-8 inline-flex min-h-[44px] items-center rounded-full bg-volt px-5 font-semibold text-brand"
           >
-            {SAMPLE}
-          </pre>
+            See how to get access
+          </a>
         </div>
         <p className="mt-4 text-sm text-paper/70">
-          The response shape is a design sketch with example values. Today the same status is
-          computed inside the app. Interested in being a design partner? Email{" "}
-          <a className="underline" href="mailto:founders@eviq.ai?subject=EVIQ%20API">
+          Want to be an early partner? Email{" "}
+          <a className="underline" href="mailto:founders@eviq.ai?subject=EVIQ%20data">
             founders@eviq.ai
           </a>
           .
