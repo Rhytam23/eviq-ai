@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Logo from "@/components/Logo";
 
 export const metadata: Metadata = {
@@ -17,6 +18,13 @@ export default function ComingSoon() {
       <p className="mt-4 text-lg text-muted">
         EVIQ is launching in India first, so we can get driver-verified charger status right in one
         country before we open elsewhere. We will open more regions later.
+      </p>
+      <p className="mt-4 text-muted">
+        Want to see the India version anyway?{" "}
+        <Link href="/india" className="text-brand underline underline-offset-2">
+          Open the India map
+        </Link>
+        .
       </p>
     </main>
   );

@@ -60,7 +60,8 @@ the browser.
 Comma-separated two-letter country codes that may use EVIQ, for example `IN` or `IN,AE`. The default is `IN`.
 Visitors from any other country see `/coming-soon`, and API calls from there get a 403. Set `*` to open the
 app to everyone. The country comes from the `x-vercel-ip-country` header (or `cf-ipcountry` behind Cloudflare).
-If the host sends no country header, as in local development and the tests, nobody is blocked. `/api/health`,
+Anyone can visit `/india` to open the India map from any country; it sets a one-week cookie that
+lifts the block for that browser (use it for demos and reviewers). If the host sends no country header, as in local development and the tests, nobody is blocked. `/api/health`,
 `robots.txt` and static assets stay reachable from anywhere.
 
 ## `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (report storage)

@@ -13,6 +13,10 @@ export function launchCountries(
     .filter(Boolean);
 }
 
+/** Set by visiting /india. It lets one browser use the India launch from any country (reviewers, demos). */
+export const PREVIEW_COOKIE = "eviq_india_preview";
+export const PREVIEW_PATH = "/india";
+
 /** Two-letter country code from the host's geo headers, or null when the host sent none (local dev, tests). */
 export function visitorCountry(headers: Headers): string | null {
   const code = (headers.get("x-vercel-ip-country") ?? headers.get("cf-ipcountry") ?? "")
