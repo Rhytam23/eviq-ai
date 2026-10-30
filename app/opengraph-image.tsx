@@ -53,7 +53,7 @@ export default function OpengraphImage() {
           Know the charger works before you drive there.
         </div>
         <div style={{ marginTop: 28, fontSize: 32, color: "#5C666D" }}>
-          Driver-verified reliability for EV charging, in any city.
+          Driver-verified reliability for EV charging. Launching in India first.
         </div>
       </div>
       <div style={{ display: "flex", height: 14, background: "#C8F03C", width: 240 }} />

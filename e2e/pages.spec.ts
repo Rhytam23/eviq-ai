@@ -7,6 +7,20 @@ import {
 } from "../lib/reliability";
 import { collectErrors } from "./helpers";
 
+test("landing page: sections animate in on scroll and are readable afterwards", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const faq = page.getByRole("heading", { name: "Questions we would ask." });
+  await faq.scrollIntoViewIfNeeded();
+  await expect(faq).toBeVisible();
+  await expect(page.locator("#faq .reveal-hidden")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Kolkata" }).first()).toHaveAttribute(
+    "href",
+    /\/map\?lat=22\.5726&lng=88\.3639/
+  );
+});
+
 test("landing page: promise, CTAs, no console errors, no horizontal scroll", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");

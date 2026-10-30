@@ -14,6 +14,8 @@ const PAGES = [
 
 for (const path of PAGES) {
   test(`axe: no serious or critical issues on ${path}`, async ({ page }) => {
+    // Scan the settled page: entrance animations fade blocks in, and axe would read them half-transparent.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(path);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])

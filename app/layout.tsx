@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "EVIQ: know the charger works before you drive there", template: "%s | EVIQ" },
   description:
-    "EVIQ is a driver-verified reliability layer for EV charging. Registries say a charger exists; EVIQ combines operator data with one-tap driver reports to show whether it works, anywhere in the world.",
+    "EVIQ is a driver-verified reliability layer for EV charging. Registries say a charger exists; EVIQ combines operator data with one-tap driver reports to show whether it works. Launching in India first.",
   openGraph: {
     title: "EVIQ: know the charger works before you drive there",
     description:
-      "Driver-verified charger status for any city, with the rules behind every label in the open.",
+      "Driver-verified charger status, launching in India first, with the rules behind every label in the open.",
     type: "website",
     siteName: "EVIQ",
   },

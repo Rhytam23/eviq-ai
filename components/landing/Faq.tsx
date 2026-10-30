@@ -9,7 +9,7 @@ const FAQ = [
   },
   {
     q: "Does it work in my country?",
-    a: "The map and reports work anywhere in the world. How many chargers you see depends on how well your area is mapped in OpenStreetMap and Open Charge Map, and we say so when an area comes back empty. Driver reports are only as good as the number of drivers reporting, so a new area starts as mostly unverified.",
+    a: "EVIQ is open in India first; other countries see a coming-soon page. How many chargers you see depends on how well your area is mapped in OpenStreetMap and Open Charge Map, and we say so when an area comes back empty. Driver reports are only as good as the number of drivers reporting, so a new area starts as mostly unverified.",
   },
   {
     q: "What do you store about me?",

@@ -263,7 +263,8 @@ export default function MapApp() {
   return (
     <div className="flex h-dvh flex-col md:flex-row">
       <div className="contents md:flex md:w-[420px] md:shrink-0 md:flex-col md:border-r md:border-line md:bg-surface">
-        <header className="z-10 space-y-2.5 border-b border-line bg-surface px-4 py-3">
+        <header className="relative z-10 space-y-2.5 border-b border-line bg-surface px-4 py-3">
+          <span aria-hidden className="tricolor absolute inset-x-0 top-0 h-[3px]" />
           <div className="flex items-center justify-between">
             <Logo />
             <p className="hidden text-xs text-muted min-[400px]:block">

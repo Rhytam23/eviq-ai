@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { INDIA_CITIES } from "@/lib/cities";
 
 export interface Place {
   name: string;
@@ -85,7 +86,7 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
             setPlaces(null);
             setMessage("");
           }}
-          placeholder="Search a city or address"
+          placeholder="Search an Indian city or address"
           autoComplete="off"
           className="min-w-0 flex-1 min-h-11 rounded-lg border border-line bg-white px-3 text-base placeholder:text-muted/70 md:text-sm"
         />
@@ -118,6 +119,19 @@ export default function SearchBox({ onPick, onLocate, locating }: Props) {
           </svg>
         </button>
       </form>
+      <ul className="-mx-1 mt-1 flex gap-1 overflow-x-auto pb-1" aria-label="Jump to a city">
+        {INDIA_CITIES.map((c) => (
+          <li key={c.name} className="shrink-0">
+            <button
+              type="button"
+              onClick={() => pick({ name: c.name, lat: c.lat, lng: c.lng })}
+              className="min-h-11 rounded-full px-3 text-sm font-medium text-brand hover:bg-brand/5"
+            >
+              {c.name}
+            </button>
+          </li>
+        ))}
+      </ul>
       <div aria-live="polite" className="text-xs text-muted">
         {status === "error" && <p className="mt-1.5 text-bad">{message}</p>}
         {status !== "error" && message && <p className="mt-1.5">{message}</p>}

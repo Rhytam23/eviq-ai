@@ -3,7 +3,7 @@ const COLUMNS = [
     title: "Built and working",
     tone: "bg-ok",
     items: [
-      "Live map that auto-locates you and searches any city",
+      "Live map that auto-locates you and searches Indian cities",
       "Charger data from Open Charge Map and OpenStreetMap, source shown per station",
       "One-tap working / broken / busy reports with a server-side cooldown",
       "Open, rule-based status with unit tests",

@@ -42,3 +42,128 @@ body {
   width: 44px;
   height: 44px;
 }
+
+/* ------------------------------- landing motion ------------------------------- */
+
+.reveal-hidden,
+.reveal-in {
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms);
+}
+.reveal-hidden {
+  opacity: 0;
+  transform: translateY(28px);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.draw {
+  transform-origin: left;
+  animation: draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.7s both;
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.float {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes drift {
+  50% {
+    transform: translate(30px, -24px) scale(1.08);
+  }
+}
+.drift {
+  animation: drift 14s ease-in-out infinite;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes ping-soft {
+  75%,
+  100% {
+    transform: scale(1.18, 1.5);
+    opacity: 0;
+  }
+}
+.ping-soft {
+  animation: ping-soft 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.ping {
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.lift {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -14px rgba(11, 61, 46, 0.35);
+}
+
+.tricolor {
+  background: linear-gradient(90deg, #ff9933 33.3%, #ffffff 33.3% 66.6%, #138808 66.6%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .drift,
+  .ping,
+  .ping-soft,
+  .marquee-track {
+    animation: none !important;
+  }
+  .lift:hover {
+    transform: none;
+  }
+}

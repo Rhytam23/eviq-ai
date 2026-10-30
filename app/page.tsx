@@ -1,5 +1,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Reveal from "@/components/Reveal";
+import { INDIA_CITIES, cityMapHref } from "@/lib/cities";
 import DataApi from "@/components/landing/DataApi";
 import Faq from "@/components/landing/Faq";
 import Footer from "@/components/landing/Footer";
@@ -21,6 +23,15 @@ const GAP = [
     title: "The people who know are right there",
     body: "Every driver at a charger can answer one question in one tap: did it work? Nobody collects those answers, so everyone starts from zero.",
   },
+];
+
+const MARQUEE = [
+  "One tap, no account",
+  "Reports age out",
+  "Rules in the open",
+  "Driver-verified",
+  "Launching in India first",
+  "Registry data plus ground truth",
 ];
 
 const STEPS = [
@@ -76,6 +87,20 @@ export default function Page() {
       <main>
         <Hero />
 
+        <div
+          aria-hidden
+          className="marquee overflow-hidden border-y border-line bg-brand py-3.5 text-paper"
+        >
+          <div className="marquee-track flex w-max gap-10 whitespace-nowrap font-serif text-xl italic">
+            {[...MARQUEE, ...MARQUEE].map((m, i) => (
+              <span key={i} className="flex items-center gap-10">
+                {m}
+                <span className="h-1.5 w-1.5 rounded-full bg-volt" />
+              </span>
+            ))}
+          </div>
+        </div>
+
         <Section
           id="the-gap"
           number="01"
@@ -87,7 +112,7 @@ export default function Page() {
         >
           <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
             {GAP.map((g) => (
-              <div key={g.title} className="bg-surface p-7">
+              <div key={g.title} className="bg-surface p-7 transition-colors hover:bg-paper">
                 <h3 className="font-serif text-2xl leading-snug">{g.title}</h3>
                 <p className="mt-3 text-[15px] leading-relaxed text-muted">{g.body}</p>
               </div>
@@ -103,7 +128,7 @@ export default function Page() {
         >
           <ol className="grid gap-10 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title}>
+              <li key={s.title} className="lift rounded-2xl border border-transparent p-4 -m-4">
                 <span className="font-serif text-6xl italic text-brand/30">{i + 1}</span>
                 <h3 className="mt-2 text-xl font-semibold">{s.title}</h3>
                 <p className="mt-2 leading-relaxed text-muted">{s.body}</p>
@@ -113,8 +138,43 @@ export default function Page() {
         </Section>
 
         <Section
-          id="status-rules"
+          id="india-first"
           number="03"
+          title={
+            <>
+              Starting in India, one city at a <em>time</em>.
+            </>
+          }
+          intro="Driver reports only help when there are enough of them in one place. So we are launching in India and going deep in a few cities before we open anywhere else. Pick a city to open the map there."
+        >
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {INDIA_CITIES.map((c, i) => (
+              <li key={c.name}>
+                <Reveal delay={i * 70}>
+                  <Link
+                    href={cityMapHref(c)}
+                    className="lift group flex min-h-24 flex-col justify-between rounded-2xl border border-line bg-surface p-5"
+                  >
+                    <span className="font-serif text-2xl">{c.name}</span>
+                    <span className="mt-4 text-sm text-brand">
+                      Open map{" "}
+                      <span
+                        aria-hidden
+                        className="inline-block transition-transform group-hover:translate-x-1"
+                      >
+                        &rarr;
+                      </span>
+                    </span>
+                  </Link>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section
+          id="status-rules"
+          number="04"
           title={
             <>
               Four labels. The rules are <em>public</em>.
@@ -127,7 +187,7 @@ export default function Page() {
 
         <Section
           id="data-and-api"
-          number="04"
+          number="05"
           tone="dark"
           title={
             <>
@@ -140,14 +200,14 @@ export default function Page() {
 
         <Section
           id="status"
-          number="05"
+          number="06"
           title="Where we are, honestly."
           intro="This is an early product. The map and the report loop work end to end. Everything marked next or later is not built."
         >
           <Roadmap />
         </Section>
 
-        <Section id="faq" number="06" title="Questions we would ask.">
+        <Section id="faq" number="07" title="Questions we would ask.">
           <Faq />
         </Section>
 
